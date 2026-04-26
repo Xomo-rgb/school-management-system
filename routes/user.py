@@ -1,29 +1,20 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from db import get_db_connection
+from firebase_db import get_firestore_db, get_school_id
+from firebase_helpers import *
 from utils import role_required, log_activity
 from werkzeug.security import generate_password_hash
-import psycopg2
-import psycopg2.extras
 
 user_bp = Blueprint('user', __name__)
 
 @user_bp.route('/')
-@role_required('system_admin')
+@role_required('school_admin')
 def view_users():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("""
-        SELECT u.user_id, u.full_name, u.email, u.role, t.teacher_id, t.phone
-        FROM public.users u
-        LEFT JOIN public.teachers t ON u.user_id = t.user_id
-        ORDER BY u.full_name
-    """)
-    users = cursor.fetchall()
-    cursor.close()
+    users = get_all_documents('users')
+    users.sort(key=lambda x: x.get('full_name', ''))
     return render_template('view_users.html', users=users)
 
 @user_bp.route('/add', methods=['GET', 'POST'])
-@role_required('system_admin')
+@role_required('school_admin')
 def add_user():
     if request.method == 'POST':
         full_name = request.form.get('full_name')
@@ -32,44 +23,41 @@ def add_user():
         phone = request.form.get('phone')
         default_password = "password123"
         hashed_password = generate_password_hash(default_password)
+        
         if not all([full_name, email, role]):
             flash("Full Name, Email, and Role are required fields.", "error")
             return render_template('add_user.html', form_data=request.form)
+        
         if role == 'teacher' and not phone:
             flash("Phone number is required for the 'Teacher' role.", "error")
             return render_template('add_user.html', form_data=request.form)
         
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cursor.execute("SELECT user_id FROM public.users WHERE email = %s", (email,))
-        if cursor.fetchone():
+        existing_users = get_documents_where('users', 'email', '==', email)
+        if existing_users:
             flash("A user with this email address already exists.", "error")
-            cursor.close()
             return render_template('add_user.html', form_data=request.form)
         
-        cursor.execute(
-            "INSERT INTO public.users (full_name, email, password, role) VALUES (%s, %s, %s, %s) RETURNING user_id",
-            (full_name, email, hashed_password, role)
-        )
-        new_user_id = cursor.fetchone()['user_id']
+        user_data = {
+            'full_name': full_name,
+            'email': email,
+            'password': hashed_password,
+            'role': role,
+            'must_reset_password': True
+        }
         
-        if role == 'teacher':
-            cursor.execute("INSERT INTO public.teachers (user_id, phone) VALUES (%s, %s)", (new_user_id, phone))
+        if role == 'teacher' and phone:
+            user_data['phone'] = phone
         
-        conn.commit()
-        cursor.close()
+        add_document('users', user_data)
         log_activity(f"Created new user: '{full_name}' with role '{role}'.")
         flash(f"User '{full_name}' created successfully.", "success")
         return redirect(url_for('user.view_users'))
     
     return render_template('add_user.html')
 
-@user_bp.route('/edit/<int:user_id>', methods=['GET', 'POST'])
-@role_required('system_admin')
+@user_bp.route('/edit/<user_id>', methods=['GET', 'POST'])
+@role_required('school_admin')
 def edit_user(user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
     if request.method == 'POST':
         action = request.form.get('action')
 
@@ -81,65 +69,93 @@ def edit_user(user_id):
 
             if role == 'teacher' and not phone:
                 flash("Phone number is required for the 'Teacher' role.", "error")
-                cursor.close()
                 return redirect(url_for('user.edit_user', user_id=user_id))
 
-            cursor.execute("UPDATE public.users SET full_name = %s, email = %s, role = %s WHERE user_id = %s", (full_name, email, role, user_id))
+            user_data = {
+                'full_name': full_name,
+                'email': email,
+                'role': role
+            }
             
-            if role == 'teacher':
-                cursor.execute("SELECT teacher_id FROM public.teachers WHERE user_id = %s", (user_id,))
-                teacher_profile = cursor.fetchone()
-                if teacher_profile:
-                    cursor.execute("UPDATE public.teachers SET phone = %s WHERE user_id = %s", (phone, user_id))
-                else:
-                    cursor.execute("INSERT INTO public.teachers (user_id, phone) VALUES (%s, %s)", (user_id, phone))
+            if role == 'teacher' and phone:
+                user_data['phone'] = phone
             
-            conn.commit()
+            update_document('users', user_id, user_data)
             log_activity(f"Edited user details for '{full_name}' (ID: {user_id}).")
             flash("User details updated successfully.", "success")
 
         elif action == 'reset_password':
             default_password = "password123"
             hashed_password = generate_password_hash(default_password)
-            cursor.execute("UPDATE public.users SET password = %s WHERE user_id = %s", (hashed_password, user_id))
-            conn.commit()
+            update_document('users', user_id, {
+                'password': hashed_password,
+                'must_reset_password': True
+            })
             log_activity(f"Reset password for user ID: {user_id}.")
-            flash("User's password has been reset to 'password123'.", "success")
+            flash("User's password has been reset to 'password123'. They will be prompted to change it on next login.", "success")
         
-        cursor.close()
         return redirect(url_for('user.edit_user', user_id=user_id))
 
-    cursor.execute("""
-        SELECT u.user_id, u.full_name, u.email, u.role, t.phone
-        FROM public.users u
-        LEFT JOIN public.teachers t ON u.user_id = t.user_id
-        WHERE u.user_id = %s
-    """, (user_id,))
-    user_data = cursor.fetchone()
-    cursor.close()
+    user_data = get_document_by_id('users', user_id)
     if not user_data:
         flash("User not found.", "error")
         return redirect(url_for('user.view_users'))
         
     return render_template('edit_user.html', user=user_data)
 
-
-@user_bp.route('/delete/<int:user_id>', methods=['POST'])
-@role_required('system_admin')
+@user_bp.route('/delete/<user_id>', methods=['POST'])
+@role_required('school_admin')
 def delete_user(user_id):
     if user_id == session.get('user_id'):
         flash("You cannot delete your own account.", "error")
         return redirect(url_for('user.view_users'))
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("SELECT full_name FROM public.users WHERE user_id = %s", (user_id,))
-    user_to_delete = cursor.fetchone()
-    user_name = user_to_delete['full_name'] if user_to_delete else 'Unknown'
     
-    cursor.execute("DELETE FROM public.teachers WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM public.users WHERE user_id = %s", (user_id,))
-    conn.commit()
-    cursor.close()
+    user_to_delete = get_document_by_id('users', user_id)
+    user_name = user_to_delete.get('full_name', 'Unknown') if user_to_delete else 'Unknown'
+    
+    delete_document('users', user_id)
     log_activity(f"Deleted user: '{user_name}' (ID: {user_id}).")
     flash("User deleted successfully.", "success")
     return redirect(url_for('user.view_users'))
+
+@user_bp.route('/assign_teacher/<user_id>', methods=['GET', 'POST'])
+@role_required('school_admin')
+def assign_teacher(user_id):
+    from academic_helpers import get_subjects_for_class
+
+    teacher = get_document_by_id('users', user_id)
+    if not teacher or teacher.get('role') != 'teacher':
+        flash("Teacher not found.", "error")
+        return redirect(url_for('user.view_users'))
+
+    CLASS_ORDER = ['nursery', 'reception', 'standard 1', 'standard 2', 'standard 3',
+                   'standard 4', 'standard 5', 'standard 6', 'standard 7', 'standard 8']
+
+    if request.method == 'POST':
+        assignments = []
+        for class_name in CLASS_ORDER:
+            key = class_name.replace(' ', '_')
+            if request.form.get(f'class_{key}'):
+                selected_subjects = request.form.getlist(f'subjects_{key}')
+                assignments.append({
+                    'class_name': class_name,
+                    'subjects': selected_subjects
+                })
+
+        update_document('users', user_id, {'assignments': assignments})
+        log_activity(f"Updated class assignments for teacher '{teacher.get('full_name')}'.")
+        flash("Class assignments updated successfully.", "success")
+        return redirect(url_for('user.assign_teacher', user_id=user_id))
+
+    # Build class data with subjects from Firebase
+    current_assignments = {a['class_name']: a['subjects'] for a in teacher.get('assignments', [])}
+    classes_data = []
+    for class_name in CLASS_ORDER:
+        classes_data.append({
+            'name': class_name,
+            'subjects': get_subjects_for_class(class_name),
+            'assigned': class_name in current_assignments,
+            'assigned_subjects': current_assignments.get(class_name, [])
+        })
+
+    return render_template('assign_teacher.html', teacher=teacher, classes_data=classes_data)

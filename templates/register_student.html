@@ -77,6 +77,8 @@
         <option value="standard 4" {% if form_data.class_name == 'standard 4' %}selected{% endif %}>Standard 4</option>
         <option value="standard 5" {% if form_data.class_name == 'standard 5' %}selected{% endif %}>Standard 5</option>
         <option value="standard 6" {% if form_data.class_name == 'standard 6' %}selected{% endif %}>Standard 6</option>
+        <option value="standard 7" {% if form_data.class_name == 'standard 7' %}selected{% endif %}>Standard 7</option>
+        <option value="standard 8" {% if form_data.class_name == 'standard 8' %}selected{% endif %}>Standard 8</option>
       </select>
     </div>
   </div>
@@ -88,9 +90,10 @@
         class="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
     </div>
     <div>
-      <label for="government_number" class="block text-sm font-medium text-gray-700">Government Number</label>
+    <label for="government_number" id="gov_label" class="block text-sm font-medium text-gray-700">Government Number <span id="gov_required_star" class="text-red-500 hidden">*</span></label>
       <input type="text" id="government_number" name="government_number" value="{{ form_data.government_number or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
+        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" />
+      <p id="gov_hint" class="text-xs text-gray-400 mt-1 hidden">Required for Standard 1 and above.</p>
     </div>
   </div>
 
@@ -121,6 +124,25 @@
     </button>
   </div>
 </form>
+
+<script>
+  const classSelect = document.getElementById('class_name');
+  const govInput = document.getElementById('government_number');
+  const govStar = document.getElementById('gov_required_star');
+  const govHint = document.getElementById('gov_hint');
+  const noGovClasses = ['nursery', 'reception', ''];
+
+  function updateGovField() {
+    const selected = classSelect.value;
+    const isRequired = !noGovClasses.includes(selected);
+    govInput.required = isRequired;
+    govStar.classList.toggle('hidden', !isRequired);
+    govHint.classList.toggle('hidden', !isRequired);
+  }
+
+  classSelect.addEventListener('change', updateGovField);
+  updateGovField();
+</script>
 </div>
 </body>
 </html>

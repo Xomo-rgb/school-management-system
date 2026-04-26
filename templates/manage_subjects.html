@@ -1,0 +1,73 @@
+{% extends "admin_base.html" %}
+{% block title %}Manage Subjects{% endblock %}
+{% block header_title %}Manage Subjects{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4 space-y-2">
+          {% for category, message in messages %}
+            <div class="p-3 rounded-md text-sm
+                {% if category == 'error' %}bg-red-100 text-red-800 border border-red-200
+                {% else %}bg-green-100 text-green-800 border border-green-200{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
+        <p class="text-sm text-blue-700">
+            These are the subjects available per class. Teachers will select from these when being assigned classes.
+            You can add or remove subjects at any time.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for class_name in classes %}
+        <div class="bg-white rounded-lg shadow">
+            <div class="flex items-center justify-between p-4 border-b border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-800">{{ class_name | title }}</h3>
+                <span class="text-xs text-gray-400">{{ subjects_by_class[class_name] | length }} subjects</span>
+            </div>
+
+            <!-- Subject List -->
+            <div class="p-4 space-y-2 min-h-16">
+                {% for subject in subjects_by_class[class_name] %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">{{ subject }}</span>
+                    <form method="POST" action="{{ url_for('admin.manage_subjects') }}"
+                          onsubmit="return confirm('Remove {{ subject }} from {{ class_name | title }}?');">
+                        <input type="hidden" name="action" value="remove_subject">
+                        <input type="hidden" name="class_name" value="{{ class_name }}">
+                        <input type="hidden" name="subject" value="{{ subject }}">
+                        <button type="submit" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                    </form>
+                </div>
+                {% else %}
+                <p class="text-xs text-gray-400 italic">No subjects added yet.</p>
+                {% endfor %}
+            </div>
+
+            <!-- Add Subject -->
+            <div class="p-4 border-t border-gray-100 bg-gray-50">
+                <form method="POST" action="{{ url_for('admin.manage_subjects') }}" class="flex space-x-2">
+                    <input type="hidden" name="action" value="add_subject">
+                    <input type="hidden" name="class_name" value="{{ class_name }}">
+                    <input type="text" name="new_subject" placeholder="Add subject..."
+                           class="flex-1 text-sm rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                           required>
+                    <button type="submit"
+                            class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
+                        Add
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

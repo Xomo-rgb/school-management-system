@@ -3,7 +3,7 @@
 {% elif session.role == 'accounts' %}
     {% extends "accounts_base.html" %}
 {% elif session.role == 'school_admin' %}
-    {% extends "school_admin_base.html" %}
+    {% extends "admin_base.html" %}
 {% else %}
     {% extends "admin_base.html" %}
 {% endif %}
@@ -19,10 +19,25 @@
             <label for="class_name" class="font-medium text-gray-700 text-sm">Filter by Class:</label>
             <select name="class_name" id="class_name" class="form-select rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
                 <option value="">All Classes</option>
-                <option value="nursery">Nursery</option><option value="reception">Reception</option><option value="standard 1">Standard 1</option><option value="standard 2">Standard 2</option><option value="standard 3">Standard 3</option><option value="standard 4">Standard 4</option><option value="standard 5">Standard 5</option><option value="standard 6">Standard 6</option>
+                {% if session.role == 'teacher' %}
+                    {% for assignment in teacher_assignments %}
+                    <option value="{{ assignment.class_name }}">{{ assignment.class_name | title }}</option>
+                    {% endfor %}
+                {% else %}
+                    <option value="nursery">Nursery</option>
+                    <option value="reception">Reception</option>
+                    <option value="standard 1">Standard 1</option>
+                    <option value="standard 2">Standard 2</option>
+                    <option value="standard 3">Standard 3</option>
+                    <option value="standard 4">Standard 4</option>
+                    <option value="standard 5">Standard 5</option>
+                    <option value="standard 6">Standard 6</option>
+                    <option value="standard 7">Standard 7</option>
+                    <option value="standard 8">Standard 8</option>
+                {% endif %}
             </select>
         </form>
-        {% if session['role'] in ['school_admin', 'system_admin'] %}
+        {% if session['role'] in ['school_admin'] %}
         <a href="{{ url_for('student.register_student') }}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm font-medium">+ Register New Student</a>
         {% endif %}
     </div>
@@ -47,17 +62,17 @@
                 <td class="px-6 py-4 text-sm text-gray-900">{{ student.student_number }}</td>
                 <td class="px-6 py-4 text-sm font-medium text-gray-900">
                     <!-- *** THE LINK IS HERE *** -->
-                    <a href="{{ url_for('student.profile', student_id=student.student_id) }}" class="text-indigo-600 hover:underline">
+                    <a href="{{ url_for('student.profile', student_id=student.id) }}" class="text-indigo-600 hover:underline">
                         {{ student.first_name }} {{ student.middle_name or '' }} {{ student.last_name }}
                     </a>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500">{{ student.class_name|title }}</td>
                 <td class="px-6 py-4 text-sm text-gray-500">{{ student.guardian_contact }}</td>
                 <td class="px-6 py-4 text-sm font-medium">
-                    {% if session['role'] in ['school_admin', 'system_admin'] %}
+                    {% if session['role'] in ['school_admin'] %}
                         <div class="flex space-x-4">
-                            <a href="{{ url_for('student.edit_student', student_id=student.student_id) }}" class="text-green-600 hover:text-green-900">Edit</a>
-                            <form action="{{ url_for('student.delete_student', student_id=student.student_id) }}" method="post" onsubmit="return confirm('Delete this student?');"><button type="submit" class="text-red-600 hover:text-red-900">Delete</button></form>
+                            <a href="{{ url_for('student.edit_student', student_id=student.id) }}" class="text-green-600 hover:text-green-900">Edit</a>
+                            <form action="{{ url_for('student.delete_student', student_id=student.id) }}" method="post" onsubmit="return confirm('Delete this student?');"><button type="submit" class="text-red-600 hover:text-red-900">Delete</button></form>
                         </div>
                     {% else %}
                         <span class="text-gray-400">View Only</span>

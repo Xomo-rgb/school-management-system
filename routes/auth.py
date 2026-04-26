@@ -1,9 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from db import get_db_connection
+from firebase_db import get_firestore_db, get_school_id
 from werkzeug.security import check_password_hash
 from utils import log_activity
-import psycopg2
-import psycopg2.extras
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -20,33 +18,47 @@ def login():
             flash("Please enter both email and password.", "error")
             return redirect(url_for('auth.login'))
 
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        db = get_firestore_db()
+        school_id = get_school_id()
         
-        # Specifying the 'public' schema
-        cursor.execute("SELECT user_id, full_name, email, password, role FROM public.users WHERE email = %s", (email,))
-        user = cursor.fetchone()
-        cursor.close()
+        users_ref = db.collection('schools').document(school_id).collection('users')
+        query = users_ref.where('email', '==', email).limit(1).stream()
+        
+        user_doc = None
+        for doc in query:
+            user_doc = doc
+            break
+        
+        if user_doc:
+            user = user_doc.to_dict()
+            user['user_id'] = user_doc.id
+            
+            if check_password_hash(user['password'], password):
+                log_activity(f"User logged in successfully.", user_id=user['user_id'], user_full_name=user['full_name'])
 
-        if user and check_password_hash(user['password'], password):
-            log_activity(f"User logged in successfully.", user_id=user['user_id'], user_full_name=user['full_name'])
+                session['user_id'] = user['user_id']
+                session['full_name'] = user['full_name']
+                session['email'] = user['email']
+                session['role'] = user['role']
+                session['school_id'] = school_id
 
-            session['user_id'] = user['user_id']
-            session['full_name'] = user['full_name']
-            session['email'] = user['email']
-            session['role'] = user['role']
+                if user.get('must_reset_password'):
+                    session['must_reset_password'] = True
+                    return redirect(url_for('profile.force_password_reset'))
 
-            user_role = user['role']
-            if user_role == 'system_admin':
-                return redirect(url_for('admin.system_admin_dashboard'))
-            elif user_role == 'school_admin':
-                return redirect(url_for('admin.school_admin_dashboard'))
-            elif user_role == 'teacher':
-                return redirect(url_for('teacher.teacher_dashboard'))
-            elif user_role == 'accounts':
-                return redirect(url_for('admin.accounts_dashboard'))
+                user_role = user['role']
+                if user_role == 'school_admin':
+                    return redirect(url_for('admin.school_admin_dashboard'))
+                elif user_role == 'teacher':
+                    return redirect(url_for('teacher.teacher_dashboard'))
+                elif user_role == 'accounts':
+                    return redirect(url_for('admin.accounts_dashboard'))
+                else:
+                    flash("Your user role is undefined. Please contact an administrator.", "error")
+                    return redirect(url_for('auth.login'))
             else:
-                flash("Your user role is undefined. Please contact an administrator.", "error")
+                log_activity(f"Failed login attempt for email: '{email}'.")
+                flash("Invalid email or password. Please try again.", "error")
                 return redirect(url_for('auth.login'))
         else:
             log_activity(f"Failed login attempt for email: '{email}'.")

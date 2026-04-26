@@ -1,146 +1,226 @@
 {% extends "admin_base.html" %}
 
-{% block title %}System Admin Dashboard{% endblock %}
-
+{% block title %}Dashboard{% endblock %}
 {% block header_title %}Dashboard Overview{% endblock %}
 
 {% block content %}
+
 <!-- Stat Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-green-500 text-white rounded-full">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+    <!-- Total Students -->
+    <div class="relative bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-6 text-white overflow-hidden">
+        <div class="absolute -top-4 -right-4 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="flex items-center justify-between relative z-10">
+            <div>
+                <p class="text-green-100 text-sm font-medium uppercase tracking-wide">Total Students</p>
+                <p class="text-5xl font-extrabold mt-1">{{ total_students }}</p>
+                <p class="text-green-200 text-xs mt-2">Enrolled this period</p>
             </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-600">Total Students</h3>
-                <p class="text-3xl font-bold text-gray-800">{{ total_students }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-blue-500 text-white rounded-full">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 14l9-5-9-5-9 5 9 5z"></path><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222 4 2.222V20M12 14v6m0-6H9m3 0h3"></path></svg>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-600">Total Teachers</h3>
-                <p class="text-3xl font-bold text-gray-800">{{ total_teachers }}</p>
+            <div class="bg-white bg-opacity-20 p-4 rounded-xl">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
             </div>
         </div>
     </div>
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-yellow-500 text-white rounded-full">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+
+    <!-- Total Teachers -->
+    <div class="relative bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-6 text-white overflow-hidden">
+        <div class="absolute -top-4 -right-4 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="flex items-center justify-between relative z-10">
+            <div>
+                <p class="text-blue-100 text-sm font-medium uppercase tracking-wide">Total Teachers</p>
+                <p class="text-5xl font-extrabold mt-1">{{ total_teachers }}</p>
+                <p class="text-blue-200 text-xs mt-2">Active staff members</p>
             </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-600">Total Classes</h3>
-                <p class="text-3xl font-bold text-gray-800">{{ total_classes }}</p>
+            <div class="bg-white bg-opacity-20 p-4 rounded-xl">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                </svg>
             </div>
         </div>
     </div>
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-red-500 text-white rounded-full">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+
+    <!-- Total Users -->
+    <div class="relative bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white overflow-hidden">
+        <div class="absolute -top-4 -right-4 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="flex items-center justify-between relative z-10">
+            <div>
+                <p class="text-purple-100 text-sm font-medium uppercase tracking-wide">Total Users</p>
+                <p class="text-5xl font-extrabold mt-1">{{ total_users }}</p>
+                <p class="text-purple-200 text-xs mt-2">System accounts</p>
             </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-600">Total Users</h3>
-                <p class="text-3xl font-bold text-gray-800">{{ total_users }}</p>
+            <div class="bg-white bg-opacity-20 p-4 rounded-xl">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
             </div>
         </div>
     </div>
 </div>
 
-<!-- NEW CHART SECTION -->
-<div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">Students per Class</h3>
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-2xl shadow p-6">
+        <h3 class="text-base font-semibold text-gray-700 mb-4">Students per Class</h3>
         <div class="h-64 relative"><canvas id="studentsPerClassChart"></canvas></div>
     </div>
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">User Roles Distribution</h3>
+    <div class="bg-white rounded-2xl shadow p-6">
+        <h3 class="text-base font-semibold text-gray-700 mb-4">Users by Role</h3>
         <div class="h-64 relative"><canvas id="usersByRoleChart"></canvas></div>
     </div>
 </div>
 
-<!-- Recent Activity Table -->
-<div class="mt-8 bg-white rounded-lg shadow">
-    <h3 class="text-xl font-semibold p-6 text-gray-700">Recently Added Users</h3>
-    <table class="min-w-full">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="px-6 py-3 border-b-2 border-gray-200 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">User</th>
-                <th class="px-6 py-3 border-b-2 border-gray-200 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Action</th>
-                <th class="px-6 py-3 border-b-2 border-gray-200 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Role</th>
-            </tr>
-        </thead>
-        <tbody class="bg-white">
-            {% if recent_activities %}
-                {% for activity in recent_activities %}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap border-b border-gray-200">{{ activity.user }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap border-b border-gray-200">{{ activity.action }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap border-b border-gray-200">{{ activity.timestamp }}</td>
-                </tr>
-                {% else %}
-                <tr><td colspan="3" class="text-center p-4 text-gray-500">No recent user activity</td></tr>
-                {% endfor %}
-            {% endif %}
-        </tbody>
-    </table>
+<!-- Quick Actions -->
+<div class="bg-white rounded-2xl shadow p-6">
+    <h3 class="text-base font-semibold text-gray-700 mb-4">Quick Actions</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <a href="{{ url_for('student.register_student') }}"
+           class="flex flex-col items-center justify-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition group">
+            <div class="p-3 bg-green-500 rounded-xl mb-2 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-700 text-center">Register Student</span>
+        </a>
+        <a href="{{ url_for('user.add_user') }}"
+           class="flex flex-col items-center justify-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition group">
+            <div class="p-3 bg-blue-500 rounded-xl mb-2 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-700 text-center">Add User</span>
+        </a>
+        <a href="{{ url_for('admin.manage_fees') }}"
+           class="flex flex-col items-center justify-center p-4 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition group">
+            <div class="p-3 bg-yellow-500 rounded-xl mb-2 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-700 text-center">Manage Fees</span>
+        </a>
+        <a href="{{ url_for('admin.academic_settings') }}"
+           class="flex flex-col items-center justify-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition group">
+            <div class="p-3 bg-purple-500 rounded-xl mb-2 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-700 text-center">Academic Settings</span>
+        </a>
+    </div>
 </div>
+
+<!-- Reports Section -->
+<div class="bg-white rounded-2xl shadow p-6 mb-8">
+    <h3 class="text-base font-semibold text-gray-700 mb-4">Generate Reports</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{{ url_for('admin.students_pdf') }}" class="flex items-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition group">
+            <div class="p-3 bg-blue-500 rounded-xl mr-3 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div>
+                <span class="text-sm font-medium text-gray-700">Students List</span>
+                <p class="text-xs text-gray-500">PDF Report</p>
+            </div>
+        </a>
+        <a href="{{ url_for('admin.view_all_results') }}" class="flex items-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition group">
+            <div class="p-3 bg-green-500 rounded-xl mr-3 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <div>
+                <span class="text-sm font-medium text-gray-700">Exam Results</span>
+                <p class="text-xs text-gray-500">View & Export</p>
+            </div>
+        </a>
+        <a href="{{ url_for('admin.view_fee_payments') }}" class="flex items-center p-4 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition group">
+            <div class="p-3 bg-yellow-500 rounded-xl mr-3 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <span class="text-sm font-medium text-gray-700">Fee Payments</span>
+                <p class="text-xs text-gray-500">View & Export</p>
+            </div>
+        </a>
+        <a href="{{ url_for('admin.view_logs') }}" class="flex items-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition group">
+            <div class="p-3 bg-purple-500 rounded-xl mr-3 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+            </div>
+            <div>
+                <span class="text-sm font-medium text-gray-700">System Logs</span>
+                <p class="text-xs text-gray-500">View & Export</p>
+            </div>
+        </a>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
-<!-- Add Chart.js library -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Students per Class Bar Chart ---
     fetch("{{ url_for('admin.get_students_per_class_data') }}")
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
-            if (data.labels && data.labels.length > 0) {
-                const ctx = document.getElementById('studentsPerClassChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
-                        datasets: [{
-                            label: '# of Students',
-                            data: data.values,
-                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, responsive: true, maintainAspectRatio: false }
-                });
-            }
+            if (!data.labels || data.labels.length === 0) return;
+            new Chart(document.getElementById('studentsPerClassChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.labels.map(l => l.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')),
+                    datasets: [{
+                        label: 'Students',
+                        data: data.data,
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } }, x: { grid: { display: false } } }
+                }
+            });
         });
 
-    // --- Users by Role Pie Chart ---
     fetch("{{ url_for('admin.get_users_by_role_data') }}")
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
-            if (data.labels && data.labels.length > 0) {
-                const ctx = document.getElementById('usersByRoleChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            data: data.values,
-                            backgroundColor: ['rgba(255, 99, 132, 0.6)','rgba(75, 192, 192, 0.6)','rgba(255, 206, 86, 0.6)','rgba(153, 102, 255, 0.6)'],
-                            borderColor: ['rgba(255, 99, 132, 1)','rgba(75, 192, 192, 1)','rgba(255, 206, 86, 1)','rgba(153, 102, 255, 1)'],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            }
+            if (!data.labels || data.labels.length === 0) return;
+            new Chart(document.getElementById('usersByRoleChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels.map(l => l.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())),
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } } },
+                    cutout: '65%'
+                }
+            });
         });
 });
 </script>

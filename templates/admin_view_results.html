@@ -1,0 +1,193 @@
+{% extends "admin_base.html" %}
+{% block title %}View All Results{% endblock %}
+{% block header_title %}View All Results{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <!-- Filters -->
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+        <h3 class="text-base font-semibold text-gray-700 mb-4">Filter Results</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                <select id="class_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Class --</option>
+                    {% for class_name in classes %}
+                    <option value="{{ class_name }}">{{ class_name | title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
+                <select id="year_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Year --</option>
+                    {% for period in all_periods %}
+                    <option value="{{ period.year }}" {% if period.year == current_period.year %}selected{% endif %}>
+                        {{ period.year }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Term</label>
+                <select id="term_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Term --</option>
+                    <option value="Term 1" {% if current_period.term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                    <option value="Term 2" {% if current_period.term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                    <option value="Term 3" {% if current_period.term == 'Term 3' %}selected{% endif %}>Term 3</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Subject (Optional)</label>
+                <select id="subject_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">All Subjects</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div id="results_section" class="hidden">
+        <div class="bg-white rounded-2xl shadow overflow-hidden">
+            <div class="flex items-center justify-between p-5 border-b border-gray-100">
+                <h3 class="text-base font-semibold text-gray-800" id="results_title">Results</h3>
+                <div class="flex items-center space-x-4">
+                    <div id="summary" class="text-sm text-gray-500"></div>
+                    <form method="POST" action="{{ url_for('admin.results_pdf') }}" id="pdf_form" class="inline">
+                        <input type="hidden" name="class_name" id="pdf_class_name">
+                        <input type="hidden" name="term" id="pdf_term">
+                        <input type="hidden" name="academic_year" id="pdf_academic_year">
+                        <input type="hidden" name="subject_filter" id="pdf_subject_filter">
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                            Download PDF
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm" id="results_table">
+                    <thead class="bg-gray-50" id="results_thead"></thead>
+                    <tbody class="divide-y divide-gray-100" id="results_tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="hidden text-center py-8 text-gray-400">Loading results...</div>
+    <div id="no_results" class="hidden bg-white rounded-2xl shadow p-8 text-center text-gray-400">
+        No results found for the selected filters.
+    </div>
+</div>
+
+<script>
+    const classSelect = document.getElementById('class_select');
+    const yearSelect = document.getElementById('year_select');
+    const termSelect = document.getElementById('term_select');
+    const subjectSelect = document.getElementById('subject_select');
+
+    function loadResults() {
+        const className = classSelect.value;
+        const year = yearSelect.value;
+        const term = termSelect.value;
+        const subjectFilter = subjectSelect.value;
+
+        if (!className || !year || !term) return;
+
+        document.getElementById('results_section').classList.add('hidden');
+        document.getElementById('no_results').classList.add('hidden');
+        document.getElementById('loading').classList.remove('hidden');
+
+        const formData = new FormData();
+        formData.append('class_name', className);
+        formData.append('academic_year', year);
+        formData.append('term', term);
+        formData.append('subject_filter', subjectFilter);
+
+        fetch("{{ url_for('admin.get_admin_class_results') }}", { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+
+                if (data.length === 0) {
+                    document.getElementById('no_results').classList.remove('hidden');
+                    return;
+                }
+
+                // Get all unique subjects
+                const subjects = [...new Set(data.flatMap(s => s.subjects.map(r => r.subject)))].sort();
+
+                // Update subject filter options
+                subjectSelect.innerHTML = '<option value="">All Subjects</option>';
+                subjects.forEach(subject => {
+                    const option = document.createElement('option');
+                    option.value = subject;
+                    option.textContent = subject;
+                    if (subject === subjectFilter) option.selected = true;
+                    subjectSelect.appendChild(option);
+                });
+
+                // Build header
+                const thead = document.getElementById('results_thead');
+                const tbody = document.getElementById('results_tbody');
+
+                thead.innerHTML = '<tr>' +
+                    '<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>' +
+                    '<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>' +
+                    subjects.map(s => `<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${s}</th>`).join('') +
+                    '<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average</th>' +
+                    '<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>' +
+                    '</tr>';
+
+                tbody.innerHTML = data.map(student => {
+                    const subjectScores = subjects.map(subject => {
+                        const result = student.subjects.find(r => r.subject === subject);
+                        return result ? result.score : '-';
+                    });
+
+                    return '<tr class="hover:bg-gray-50">' +
+                        `<td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${student.name}</td>` +
+                        `<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${student.student_number}</td>` +
+                        subjectScores.map(score => `<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${score}</td>`).join('') +
+                        `<td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${student.average >= 40 ? 'text-green-600' : 'text-red-600'}">${student.average || '-'}</td>` +
+                        `<td class="px-4 py-3 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${student.passed ? 'bg-green-100 text-green-800' : student.passed === false ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
+                                ${student.passed ? 'Passed' : student.passed === false ? 'Failed' : 'Incomplete'}
+                            </span>
+                        </td>` +
+                        '</tr>';
+                }).join('');
+
+                // Update summary
+                const passedCount = data.filter(s => s.passed).length;
+                const totalCount = data.length;
+                document.getElementById('summary').textContent = `${passedCount}/${totalCount} students passed`;
+                document.getElementById('results_title').textContent = `Results for ${className} - ${term} ${year}`;
+                
+                // Set PDF form fields
+                document.getElementById('pdf_class_name').value = className;
+                document.getElementById('pdf_term').value = term;
+                document.getElementById('pdf_academic_year').value = year;
+                document.getElementById('pdf_subject_filter').value = subjectFilter;
+                
+                document.getElementById('results_section').classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error loading results:', error);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('no_results').classList.remove('hidden');
+            });
+    }
+
+    // Event listeners
+    classSelect.addEventListener('change', loadResults);
+    yearSelect.addEventListener('change', loadResults);
+    termSelect.addEventListener('change', loadResults);
+    subjectSelect.addEventListener('change', loadResults);
+
+    // Load results if all filters are set
+    if (classSelect.value && yearSelect.value && termSelect.value) {
+        loadResults();
+    }
+</script>
+{% endblock %}

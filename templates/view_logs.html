@@ -5,8 +5,11 @@
 {% block header_title %}System Activity Logs{% endblock %}
 
 {% block content %}
-<div class="mb-6">
+<div class="mb-6 flex justify-between items-center">
     <p class="text-sm text-gray-600">A chronological record of important actions performed within the system.</p>
+    <a href="{{ url_for('admin.logs_pdf') }}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+        Download PDF
+    </a>
 </div>
 
 <!-- Logs Table -->

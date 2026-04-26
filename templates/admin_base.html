@@ -7,26 +7,33 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .dropdown-menu.hidden { display: none; }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <div class="fixed w-64 h-full bg-gray-800 text-white p-5 shadow-lg">
-            <div class="flex items-center mb-10">
+        <div class="fixed w-64 h-full bg-gray-800 text-white p-5 shadow-lg flex flex-col">
+            <div class="flex items-center mb-10 flex-shrink-0">
                 <span class="text-2xl font-bold text-yellow-400">Harmony School</span>
             </div>
-            <nav>
+            <nav class="overflow-y-auto flex-1 pb-4 scrollbar-thin">
                 <p class="text-xs uppercase text-gray-400 mb-2">Main Menu</p>
-                <a href="{{ url_for('admin.system_admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 text-white">Dashboard</a>
+                <a href="{{ url_for('admin.school_admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 text-white">Dashboard</a>
                 
                 <p class="text-xs uppercase text-gray-400 mt-4 mb-2">Management</p>
                 <a href="{{ url_for('user.view_users') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Manage Users</a>
                 <a href="{{ url_for('student.view_students') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Manage Students</a>
+                <a href="{{ url_for('admin.promote_students') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Promote Students</a>
                 
                 <p class="text-xs uppercase text-gray-400 mt-4 mb-2">Academics &amp; Finance</p>
-                <a href="{{ url_for('curriculum.manage') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Manage Curriculum</a>
-                <a href="{{ url_for('teacher.view_results') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">View All Results</a>
+                <a href="{{ url_for('admin.academic_settings') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Academic Settings</a>
+                <a href="{{ url_for('admin.manage_fees') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Manage School Fees</a>
+                <a href="{{ url_for('admin.manage_subjects') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Manage Subjects</a>
+                <a href="{{ url_for('admin.view_all_results') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">View All Results</a>
                 <a href="{{ url_for('admin.view_fee_payments') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">View Fee Payments</a>
                 
                 <p class="text-xs uppercase text-gray-400 mt-4 mb-2">System</p>

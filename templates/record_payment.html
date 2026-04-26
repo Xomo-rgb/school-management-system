@@ -23,9 +23,10 @@
 
     <form method="POST" action="{{ url_for('admin.submit_fee') }}" class="space-y-4">
         <div>
-            <label for="student_number" class="block font-medium text-gray-700">Student Number</label>
-            <input type="text" id="student_number" name="student_number" placeholder="e.g., HS-2025-001" required
+            <label for="student_identifier" class="block font-medium text-gray-700">Student Number or Name</label>
+            <input list="student_suggestions" type="text" id="student_identifier" name="student_identifier" placeholder="e.g., HS-2025-001 or John Doe" required
                    class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
+            <datalist id="student_suggestions"></datalist>
         </div>
         <div>
             <label for="amount_paid" class="block font-medium text-gray-700">Amount Paid</label>
@@ -38,17 +39,16 @@
                    class="mt-1 block w-full rounded border border-gray-300 px-3 py-2">
         </div>
         <div>
-            <label for="term" class="block font-medium text-gray-700">Term</label>
-            <select name="term" id="term" required class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 bg-white">
-                <option value="Term 1">Term 1</option>
-                <option value="Term 2">Term 2</option>
-                <option value="Term 3">Term 3</option>
-            </select>
+            <label for="term_display" class="block font-medium text-gray-700">Term</label>
+            <input type="text" id="term_display" value="{{ current_period.term }}" readonly
+                   class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 bg-gray-100 text-gray-700">
+            <input type="hidden" id="term" name="term" value="{{ current_period.term }}">
         </div>
         <div>
-            <label for="academic_year" class="block font-medium text-gray-700">Academic Year</label>
-            <input type="text" id="academic_year" name="academic_year" placeholder="e.g., 2025" required
-                   class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
+            <label for="academic_year_display" class="block font-medium text-gray-700">Academic Year</label>
+            <input type="text" id="academic_year_display" value="{{ current_period.year }}" readonly
+                   class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 bg-gray-100 text-gray-700">
+            <input type="hidden" id="academic_year" name="academic_year" value="{{ current_period.year }}">
         </div>
         <div class="text-center pt-4">
             <button type="submit" class="bg-emerald-600 text-white px-6 py-2 rounded-md hover:bg-emerald-700 transition duration-200">
@@ -57,4 +57,35 @@
         </div>
     </form>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('student_identifier');
+        const dataList = document.getElementById('student_suggestions');
+        let timeout = null;
+
+        input.addEventListener('input', function() {
+            const query = input.value.trim();
+            clearTimeout(timeout);
+            if (!query) {
+                dataList.innerHTML = '';
+                return;
+            }
+            timeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`{{ url_for('admin.search_students') }}?q=${encodeURIComponent(query)}`);
+                    if (!response.ok) return;
+                    const students = await response.json();
+                    dataList.innerHTML = '';
+                    students.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = `${student.student_number} - ${student.full_name}`;
+                        dataList.appendChild(option);
+                    });
+                } catch (error) {
+                    console.warn('Student search failed', error);
+                }
+            }, 250);
+        });
+    });
+</script>
 {% endblock %}

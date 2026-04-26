@@ -1,194 +1,212 @@
-{% if session.role == 'teacher' %}
-    {% extends "teacher_base.html" %}
-{% elif session.role == 'school_admin' %}
-    {% extends "school_admin_base.html" %}
-{% else %}
-    {% extends "admin_base.html" %}
-{% endif %}
-
-{% block title %}Results Center{% endblock %}
-{% block header_title %}Results Center{% endblock %}
+{% extends "teacher_base.html" %}
+{% block title %}View Results{% endblock %}
+{% block header_title %}View Results{% endblock %}
 
 {% block content %}
-<!-- View Mode Toggle -->
-<div class="mb-4">
-    <div class="inline-flex rounded-md shadow-sm">
-        <button id="view_by_student_btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-indigo-600 rounded-l-md">View by Student</button>
-        <button id="view_by_subject_btn" class="px-4 py-2 text-sm font-medium text-indigo-600 bg-white border border-indigo-600 rounded-r-md hover:bg-indigo-50">View by Subject</button>
+<div class="max-w-6xl mx-auto">
+
+    <!-- Filters -->
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+        <h3 class="text-base font-semibold text-gray-700 mb-4">Filter Results</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                <select id="class_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Class --</option>
+                    {% for assignment in assignments %}
+                    <option value="{{ assignment.class_name }}">{{ assignment.class_name | title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
+                <select id="year_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Year --</option>
+                    {% for period in all_periods %}
+                    <option value="{{ period.year }}" {% if period.year == current_period.year %}selected{% endif %}>
+                        {{ period.year }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Term</label>
+                <select id="term_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Term --</option>
+                    <option value="Term 1" {% if current_period.term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                    <option value="Term 2" {% if current_period.term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                    <option value="Term 3" {% if current_period.term == 'Term 3' %}selected{% endif %}>Term 3</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Subject (Optional)</label>
+                <select id="subject_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">All Subjects</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div id="results_section" class="hidden">
+        <div class="bg-white rounded-2xl shadow overflow-hidden">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-5 border-b border-gray-100">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-800" id="results_title">Results</h3>
+                    <div id="summary" class="text-sm text-gray-500 mt-1"></div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <form method="POST" action="{{ url_for('teacher.view_results_pdf') }}" id="teacher_pdf_form" class="inline-flex">
+                        <input type="hidden" name="class_name" id="teacher_pdf_class_name">
+                        <input type="hidden" name="term" id="teacher_pdf_term">
+                        <input type="hidden" name="academic_year" id="teacher_pdf_academic_year">
+                        <input type="hidden" name="subject_filter" id="teacher_pdf_subject_filter">
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Download PDF</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('teacher.view_results_csv') }}" id="teacher_csv_form" class="inline-flex">
+                        <input type="hidden" name="class_name" id="teacher_csv_class_name">
+                        <input type="hidden" name="term" id="teacher_csv_term">
+                        <input type="hidden" name="academic_year" id="teacher_csv_academic_year">
+                        <input type="hidden" name="subject_filter" id="teacher_csv_subject_filter">
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-900">Download CSV</button>
+                    </form>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm" id="results_table">
+                    <thead class="bg-gray-50" id="results_thead"></thead>
+                    <tbody class="divide-y divide-gray-100" id="results_tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="hidden text-center py-8 text-gray-400">Loading results...</div>
+    <div id="no_results" class="hidden bg-white rounded-2xl shadow p-8 text-center text-gray-400">
+        No results found for the selected filters.
     </div>
 </div>
-<!-- Main Filter Controls -->
-<div class="bg-white p-4 rounded-lg shadow mb-6">
-    <div id="main_filters" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-        <div>
-            <label for="class_filter" class="block text-sm font-medium text-gray-700">1. Select a Class</label>
-            <select id="class_filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                <option value=""> Select a Class </option>
-                {% for c in classes %}<option value="{{ c.class_id }}">{{ c.class_name|title }}</option>{% endfor %}
-            </select>
-        </div>
-        <div>
-            <label for="term_filter" class="block text-sm font-medium text-gray-700">2. Select a Term</label>
-            <select id="term_filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                <option value="">Select a Term</option>
-                <option value="Term 1">Term 1</option><option value="Term 2">Term 2</option><option value="Term 3">Term 3</option>
-            </select>
-        </div>
-        <div>
-            <label for="year_filter" class="block text-sm font-medium text-gray-700">Academic Year</label>
-            <input type="text" id="year_filter" placeholder="e.g., 2024/2025" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-        </div>
-    </div>
-</div>
-<!-- View by Student: Student List & Search -->
-<div id="student_list_section" class="bg-white p-4 rounded-lg shadow mb-6 hidden">
-    <label for="student_search" class="block text-sm font-medium text-gray-700">3. Select a Student</label>
-    <input type="text" id="student_search" placeholder="Search for a student..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-    <div id="student_list_container" class="mt-2 max-h-60 overflow-y-auto"></div>
-</div>
-<!-- View by Subject: Subject Filter -->
-<div id="subject_filter_section" class="bg-white p-4 rounded-lg shadow mb-6 hidden">
-    <label for="subject_filter" class="block text-sm font-medium text-gray-700">3. Select a Subject</label>
-    <select id="subject_filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></select>
-</div>
-<!-- Results Display Area -->
-<div id="results_display_section" class="hidden"></div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    let currentView = 'student';
-    let allStudents = [];
-    let allSubjects = [];
-    const viewByStudentBtn = document.getElementById('view_by_student_btn');
-    const viewBySubjectBtn = document.getElementById('view_by_subject_btn');
-    const classSelect = document.getElementById('class_filter');
-    const termSelect = document.getElementById('term_filter');
-    const yearInput = document.getElementById('year_filter');
-    const studentListSection = document.getElementById('student_list_section');
-    const studentSearch = document.getElementById('student_search');
-    const studentListContainer = document.getElementById('student_list_container');
-    const subjectFilterSection = document.getElementById('subject_filter_section');
-    const subjectSelect = document.getElementById('subject_filter');
-    const resultsDisplay = document.getElementById('results_display_section');
-    const userRole = "{{ session.role }}";
+    const classSelect = document.getElementById('class_select');
+    const yearSelect = document.getElementById('year_select');
+    const termSelect = document.getElementById('term_select');
+    const subjectSelect = document.getElementById('subject_select');
+    const classSubjectMap = {{ assignments|tojson }};
 
-    function updateView() {
-        resultsDisplay.classList.add('hidden');
-        if (currentView === 'student') {
-            viewByStudentBtn.className = "px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-indigo-600 rounded-l-md";
-            viewBySubjectBtn.className = "px-4 py-2 text-sm font-medium text-indigo-600 bg-white border border-indigo-600 rounded-r-md hover:bg-indigo-50";
-            subjectFilterSection.classList.add('hidden');
-            if (classSelect.value) studentListSection.classList.remove('hidden');
-        } else {
-            viewBySubjectBtn.className = "px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-indigo-600 rounded-r-md";
-            viewByStudentBtn.className = "px-4 py-2 text-sm font-medium text-indigo-600 bg-white border border-indigo-600 rounded-l-md hover:bg-indigo-50";
-            studentListSection.classList.add('hidden');
-            if (classSelect.value) subjectFilterSection.classList.remove('hidden');
-        }
-    }
+    function updateSubjectOptions() {
+        const className = classSelect.value;
+        const selectedAssignment = classSubjectMap.find(a => a.class_name === className) || {};
+        const subjects = selectedAssignment.subjects || [];
 
-    function fetchStudentsAndSubjects() {
-        const classId = classSelect.value;
-        const className = classSelect.options[classSelect.selectedIndex].text;
-        resultsDisplay.classList.add('hidden');
-        if (!classId) {
-            studentListSection.classList.add('hidden');
-            subjectFilterSection.classList.add('hidden');
-            return;
-        }
-        const studentFormData = new FormData();
-        studentFormData.append('class_name', className);
-        fetch("{{ url_for('teacher.get_students_for_results') }}", { method: 'POST', body: studentFormData })
-            .then(res => res.json()).then(data => { allStudents = data; renderStudentList(allStudents); });
-        
-        subjectSelect.innerHTML = '<option>Loading subjects...</option>';
-        fetch(`/curriculum/get_subjects_for_class/${classId}`)
-            .then(res => res.json()).then(data => {
-                allSubjects = data;
-                subjectSelect.innerHTML = '<option value="">-- Select a Subject --</option>';
-                allSubjects.forEach(s => subjectSelect.innerHTML += `<option value="${s.subject_name}">${s.subject_name}</option>`);
-            });
-        updateView();
-    }
-
-    function fetchReportCard(studentId) {
-        const term = termSelect.value;
-        const year = yearInput.value;
-        if (!studentId || !term || !year) { alert("Please select a term and academic year."); return; }
-        resultsDisplay.classList.remove('hidden');
-        resultsDisplay.innerHTML = '<p class="p-4">Loading report card...</p>';
-        const formData = new FormData();
-        formData.append('student_id', studentId);
-        formData.append('term', term);
-        formData.append('year', year);
-        fetch("{{ url_for('teacher.get_student_report_card') }}", { method: 'POST', body: formData })
-            .then(res => res.json()).then(data => { renderReportCard(data, term, year); });
-    }
-
-    function fetchSubjectReport() {
-        const className = classSelect.options[classSelect.selectedIndex].text;
-        const subject = subjectSelect.value;
-        const term = termSelect.value;
-        const year = yearInput.value;
-        if (!className || !subject || !term || !year) { resultsDisplay.classList.add('hidden'); return; }
-        resultsDisplay.classList.remove('hidden');
-        resultsDisplay.innerHTML = '<p class="p-4">Loading subject report...</p>';
-        const formData = new FormData();
-        formData.append('class_name', className);
-        formData.append('subject', subject);
-        formData.append('term', term);
-        formData.append('year', year);
-        fetch("{{ url_for('teacher.get_subject_report') }}", { method: 'POST', body: formData })
-            .then(res => res.json()).then(data => { renderSubjectReport(data, subject, className, term, year); });
-    }
-
-    function renderStudentList(students) {
-        studentListContainer.innerHTML = '';
-        if (students.length === 0) { studentListContainer.innerHTML = '<p class="p-2">No students found.</p>'; return; }
-        students.forEach(s => {
-            const div = document.createElement('div');
-            div.className = 'p-2 hover:bg-gray-100 cursor-pointer border-b';
-            div.textContent = `${s.last_name}, ${s.first_name} (${s.student_number})`;
-            div.dataset.studentId = s.student_id;
-            studentListContainer.appendChild(div);
+        subjectSelect.innerHTML = '<option value="">All Subjects</option>';
+        subjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject;
+            option.textContent = subject;
+            subjectSelect.appendChild(option);
         });
     }
 
-    function renderReportCard(data, term, year) {
-        let resultsHtml = data.results.map(res => {
-            const actions = (userRole === 'teacher' || userRole === 'school_admin') ? `<td class="px-6 py-4 whitespace-nowrap"><div class="flex space-x-2"><a href="/teachers/edit_result/${res.result_id}" class="text-indigo-600 text-sm">Edit</a><form action="/teachers/delete_result/${res.result_id}" method="POST" onsubmit="return confirm('Delete?');"><button type="submit" class="text-red-600 text-sm">Delete</button></form></div></td>` : '';
-            return `<tr class="hover:bg-gray-50"><td class="px-6 py-4">${res.subject}</td><td class="px-6 py-4 text-center">${res.ca_score}</td><td class="px-6 py-4 text-center">${res.midterm_score}</td><td class="px-6 py-4 text-center">${res.final_exam_score}</td><td class="px-6 py-4 text-center font-semibold">${res.final_score}</td><td class="px-6 py-4 text-center font-semibold">${res.grade}</td>${actions}</tr>`;
-        }).join('');
-        if (data.results.length === 0) resultsHtml = `<tr><td colspan="7" class="text-center p-4">No results found.</td></tr>`;
-        
-        resultsDisplay.innerHTML = `<div class="bg-white p-6 rounded-lg shadow"><h3 class="text-xl font-bold">Report Card</h3><div class="mt-2 mb-4 border-b pb-2"><p><strong>Student:</strong> ${data.student.first_name} ${data.student.last_name}</p><p><strong>Class:</strong> ${data.student.class_name}</p><p><strong>Term:</strong> ${term}, ${year}</p></div><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs uppercase">Subject</th><th class="px-6 py-3 text-center text-xs uppercase">CA</th><th class="px-6 py-3 text-center text-xs uppercase">Midterm</th><th class="px-6 py-3 text-center text-xs uppercase">Final</th><th class="px-6 py-3 text-center text-xs uppercase">Overall</th><th class="px-6 py-3 text-center text-xs uppercase">Grade</th>${(userRole === 'teacher' || userRole === 'school_admin') ? '<th class="px-6 py-3 text-left text-xs uppercase">Actions</th>' : ''}</tr></thead><tbody>${resultsHtml}</tbody></table></div>`;
+    function loadResults() {
+        const className = classSelect.value;
+        const year = yearSelect.value;
+        const term = termSelect.value;
+        const subjectFilter = subjectSelect.value;
+
+        if (!className || !year || !term) return;
+
+        document.getElementById('results_section').classList.add('hidden');
+        document.getElementById('no_results').classList.add('hidden');
+        document.getElementById('loading').classList.remove('hidden');
+
+        const formData = new FormData();
+        formData.append('class_name', className);
+        formData.append('academic_year', year);
+        formData.append('term', term);
+        formData.append('subject_filter', subjectFilter);
+
+        fetch("{{ url_for('teacher.get_class_results') }}", { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+
+                if (data.length === 0) {
+                    document.getElementById('no_results').classList.remove('hidden');
+                    return;
+                }
+
+                // Get all unique subjects
+                const subjects = [...new Set(data.flatMap(s => s.subjects.map(r => r.subject)))].sort();
+
+                // Build header
+                document.getElementById('results_thead').innerHTML = `
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Student</th>
+                        ${subjects.map(s => `<th class="px-4 py-3 text-center font-medium text-gray-500 uppercase text-xs">${s}</th>`).join('')}
+                        <th class="px-4 py-3 text-center font-medium text-gray-500 uppercase">Average</th>
+                        <th class="px-4 py-3 text-center font-medium text-gray-500 uppercase">Status</th>
+                    </tr>`;
+
+                // Build rows
+                document.getElementById('results_tbody').innerHTML = data.map(student => {
+                    const scoreMap = {};
+                    student.subjects.forEach(r => scoreMap[r.subject] = r.score);
+
+                    const subjectCells = subjects.map(s =>
+                        `<td class="px-4 py-3 text-center text-gray-700">${scoreMap[s] !== undefined ? scoreMap[s] : '<span class="text-gray-300">—</span>'}</td>`
+                    ).join('');
+
+                    const avgCell = student.average !== null
+                        ? `<td class="px-4 py-3 text-center font-semibold ${student.passed ? 'text-green-600' : 'text-red-600'}">${student.average}%</td>`
+                        : `<td class="px-4 py-3 text-center text-gray-300">—</td>`;
+
+                    const statusCell = student.passed === null
+                        ? `<td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">No Data</span></td>`
+                        : student.passed
+                        ? `<td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Passed</span></td>`
+                        : `<td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-full">Failed</span></td>`;
+
+                    return `<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-gray-800">${student.name}</p>
+                            <p class="text-xs text-gray-400">${student.student_number}</p>
+                        </td>
+                        ${subjectCells}${avgCell}${statusCell}
+                    </tr>`;
+                }).join('');
+
+                // Summary
+                const passed = data.filter(s => s.passed === true).length;
+                const failed = data.filter(s => s.passed === false).length;
+                const noData = data.filter(s => s.passed === null).length;
+                document.getElementById('summary').textContent =
+                    `${data.length} students | ${passed} passed | ${failed} failed | ${noData} no data`;
+
+                document.getElementById('results_title').textContent =
+                    `${className.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} — ${term}, ${year}`;
+
+                document.getElementById('teacher_pdf_class_name').value = className;
+                document.getElementById('teacher_pdf_term').value = term;
+                document.getElementById('teacher_pdf_academic_year').value = year;
+                document.getElementById('teacher_pdf_subject_filter').value = subjectFilter;
+                document.getElementById('teacher_csv_class_name').value = className;
+                document.getElementById('teacher_csv_term').value = term;
+                document.getElementById('teacher_csv_academic_year').value = year;
+                document.getElementById('teacher_csv_subject_filter').value = subjectFilter;
+                document.getElementById('results_section').classList.remove('hidden');
+            });
     }
 
-    function renderSubjectReport(data, subject, className, term, year) {
-        let resultsHtml = data.map(res => `<tr class="hover:bg-gray-50"><td class="px-6 py-4">${res.last_name}, ${res.first_name}</td><td class="px-6 py-4">${res.student_number}</td><td class="px-6 py-4 text-center font-semibold">${res.final_score}</td><td class="px-6 py-4 text-center font-semibold">${res.grade}</td></tr>`).join('');
-        if (data.length === 0) resultsHtml = `<tr><td colspan="4" class="text-center p-4">No results found.</td></tr>`;
-
-        resultsDisplay.innerHTML = `<div class="bg-white p-6 rounded-lg shadow"><h3 class="text-xl font-bold">Subject Performance Report</h3><div class="mt-2 mb-4 border-b pb-2"><p><strong>Subject:</strong> ${subject}</p><p><strong>Class:</strong> ${className}</p><p><strong>Term:</strong> ${term}, ${year}</p></div><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs uppercase">Student Name</th><th class="px-6 py-3 text-left text-xs uppercase">Student Number</th><th class="px-6 py-3 text-center text-xs uppercase">Overall Score</th><th class="px-6 py-3 text-center text-xs uppercase">Grade</th></tr></thead><tbody>${resultsHtml}</tbody></table></div>`;
-    }
-
-    viewByStudentBtn.addEventListener('click', () => { currentView = 'student'; updateView(); });
-    viewBySubjectBtn.addEventListener('click', () => { currentView = 'subject'; updateView(); });
-    classSelect.addEventListener('change', fetchStudentsAndSubjects);
-    termSelect.addEventListener('change', () => { if (currentView === 'subject') fetchSubjectReport(); else resultsDisplay.classList.add('hidden'); });
-    yearInput.addEventListener('input', () => { if (currentView === 'subject') fetchSubjectReport(); else resultsDisplay.classList.add('hidden'); });
-    studentSearch.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const filtered = allStudents.filter(s => s.first_name.toLowerCase().includes(term) || s.last_name.toLowerCase().includes(term) || s.student_number.toLowerCase().includes(term));
-        renderStudentList(filtered);
+    classSelect.addEventListener('change', () => {
+        updateSubjectOptions();
+        loadResults();
     });
-    studentListContainer.addEventListener('click', (e) => {
-        if (e.target && e.target.dataset.studentId) {
-            Array.from(studentListContainer.children).forEach(c => c.classList.remove('bg-gray-200'));
-            e.target.classList.add('bg-gray-200');
-            fetchReportCard(e.target.dataset.studentId);
-        }
-    });
-    subjectSelect.addEventListener('change', fetchSubjectReport);
-});
+    yearSelect.addEventListener('change', loadResults);
+    termSelect.addEventListener('change', loadResults);
+    subjectSelect.addEventListener('change', loadResults);
+
+    // Initialize subject list if a class is already selected
+    updateSubjectOptions();
 </script>
 {% endblock %}

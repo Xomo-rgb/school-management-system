@@ -34,7 +34,7 @@
           {% endif %}
         {% endwith %}
 
-        <form method="post" action="{{ url_for('student.edit_student', student_id=student.student_id) }}" class="bg-white shadow-md rounded-lg p-6 space-y-6">
+        <form method="post" action="{{ url_for('student.edit_student', student_id=student.id) }}" class="bg-white shadow-md rounded-lg p-6 space-y-6">
             <!-- Personal Information Section -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
@@ -73,7 +73,7 @@
                     <label for="class_name" class="block text-sm font-medium text-gray-700 mb-1">Class</label>
                     <select id="class_name" name="class_name" required
                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
-                        {% set classes = ['nursery', 'reception', 'standard 1', 'standard 2', 'standard 3', 'standard 4', 'standard 5', 'standard 6'] %}
+                        {% set classes = ['nursery', 'reception', 'standard 1', 'standard 2', 'standard 3', 'standard 4', 'standard 5', 'standard 6', 'standard 7', 'standard 8'] %}
                         {% for cls in classes %}
                             <option value="{{ cls }}" {% if student.class_name == cls %}selected{% endif %}>{{ cls|title }}</option>
                         {% endfor %}
@@ -89,10 +89,11 @@
                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
                 </div>
                 <div>
-                    <label for="government_number" class="block text-sm font-medium text-gray-700 mb-1">Government Number</label>
+                    <label for="government_number" id="gov_label" class="block text-sm font-medium text-gray-700 mb-1">Government Number <span id="gov_required_star" class="text-red-500 hidden">*</span></label>
                     <input type="text" id="government_number" name="government_number" value="{{ student.government_number or '' }}"
                            placeholder="Enter government assigned number"
                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                    <p id="gov_hint" class="text-xs text-gray-400 mt-1 hidden">Required for Standard 1 and above.</p>
                 </div>
             </div>
 
@@ -120,15 +121,33 @@
             <!-- Form Actions -->
             <div class="flex justify-end space-x-3 pt-4">
                 <a href="{{ url_for('student.view_students') }}"
-                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">
                     Cancel
                 </a>
                 <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700">
                     Update Student
                 </button>
             </div>
         </form>
     </div>
+
+<script>
+  const classSelect = document.getElementById('class_name');
+  const govInput = document.getElementById('government_number');
+  const govStar = document.getElementById('gov_required_star');
+  const govHint = document.getElementById('gov_hint');
+  const noGovClasses = ['nursery', 'reception', ''];
+
+  function updateGovField() {
+    const isRequired = !noGovClasses.includes(classSelect.value);
+    govInput.required = isRequired;
+    govStar.classList.toggle('hidden', !isRequired);
+    govHint.classList.toggle('hidden', !isRequired);
+  }
+
+  classSelect.addEventListener('change', updateGovField);
+  updateGovField();
+</script>
 </body>
 </html>

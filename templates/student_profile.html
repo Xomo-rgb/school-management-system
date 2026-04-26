@@ -3,7 +3,7 @@
 {% elif session.role == 'accounts' %}
     {% extends "accounts_base.html" %}
 {% elif session.role == 'school_admin' %}
-    {% extends "school_admin_base.html" %}
+    {% extends "admin_base.html" %}
 {% else %}
     {% extends "admin_base.html" %}
 {% endif %}
@@ -16,9 +16,46 @@
 <div>
     <!-- Student Header -->
     <div class="bg-white p-6 rounded-lg shadow mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">{{ student.first_name }} {{ student.middle_name or '' }} {{ student.last_name }}</h2>
-        <p class="text-sm text-gray-600"><strong>Student Number:</strong> {{ student.student_number }} | <strong>Class:</strong> {{ student.class_name|title }}</p>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">{{ student.first_name }} {{ student.middle_name or '' }} {{ student.last_name }}</h2>
+                <p class="text-sm text-gray-600"><strong>Student Number:</strong> {{ student.student_number }} | <strong>Class:</strong> {{ student.class_name|title }}</p>
+            </div>
+            {% if session['role'] == 'school_admin' %}
+            <div class="flex space-x-2">
+                <a href="{{ url_for('student.edit_student', student_id=student.id) }}" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Edit Student</a>
+                <a href="{{ url_for('student.student_profile_pdf', student_id=student.id) }}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Download PDF</a>
+            </div>
+            {% elif session['role'] == 'accounts' %}
+            <a href="{{ url_for('student.student_profile_pdf', student_id=student.id) }}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Download PDF</a>
+            {% endif %}
+        </div>
     </div>
+
+    <!-- Fee Balance Card (visible to admin and accounts only) -->
+    {% if session['role'] in ['school_admin', 'accounts'] %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-lg shadow text-center">
+            <p class="text-xs text-gray-500 uppercase font-medium">Expected Fee</p>
+            <p class="text-2xl font-bold text-gray-800 mt-1">MWK {{ "{:,.0f}".format(expected_fee) }}</p>
+            <p class="text-xs text-gray-400 mt-1">{{ current_period.term }}, {{ current_period.year }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-lg shadow text-center">
+            <p class="text-xs text-gray-500 uppercase font-medium">Amount Paid</p>
+            <p class="text-2xl font-bold text-emerald-600 mt-1">MWK {{ "{:,.0f}".format(current_term_paid) }}</p>
+            <p class="text-xs text-gray-400 mt-1">This term</p>
+        </div>
+        <div class="bg-white p-5 rounded-lg shadow text-center">
+            <p class="text-xs text-gray-500 uppercase font-medium">Balance</p>
+            <p class="text-2xl font-bold mt-1 {% if balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">
+                MWK {{ "{:,.0f}".format(balance) }}
+            </p>
+            <p class="text-xs mt-1 {% if balance > 0 %}text-red-400{% else %}text-emerald-400{% endif %}">
+                {% if balance <= 0 %}Fully Paid{% else %}Outstanding{% endif %}
+            </p>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left Column: Bio -->
@@ -85,7 +122,13 @@
                         <tbody class="divide-y">
                             {% for payment in payments %}
                             <tr>
-                                <td class="px-4 py-2">{{ payment.payment_date.strftime('%d-%b-%Y') }}</td>
+                                <td class="px-4 py-2">
+                                    {% if payment.payment_date %}
+                                        {{ payment.payment_date.strftime('%d-%b-%Y') }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                </td>
                                 <td class="px-4 py-2">{{ payment.academic_year }}</td>
                                 <td class="px-4 py-2">{{ payment.term }}</td>
                                 <td class="px-4 py-2 text-right font-medium">{{ "%.2f"|format(payment.amount_paid) }}</td>

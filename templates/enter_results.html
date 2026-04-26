@@ -1,122 +1,206 @@
 {% extends "teacher_base.html" %}
-
-{% block title %}Enter Exam Results{% endblock %}
-
+{% block title %}Enter Results{% endblock %}
 {% block header_title %}Enter Exam Results{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-    <!-- Flash Messages -->
+<div class="max-w-4xl mx-auto">
+
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}<div class="mb-4 space-y-2">{% for c, m in messages %}<div class="p-3 rounded-md text-sm {%if c=='error'%}bg-red-100 text-red-800 border border-red-200{%endif%}{%if c=='success'%}bg-green-100 text-green-800 border border-green-200{%endif%}{%if c=='warning'%}bg-yellow-100 text-yellow-800 border border-yellow-200{%endif%}">{{m}}</div>{% endfor %}</div>{% endif %}
+      {% if messages %}
+        <div class="mb-4 space-y-2">
+          {% for category, message in messages %}
+            <div class="p-3 rounded-md text-sm
+                {% if category == 'error' %}bg-red-100 text-red-800 border border-red-200
+                {% else %}bg-green-100 text-green-800 border border-green-200{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
     {% endwith %}
 
-    {% if classes %}
-    <form method="POST" action="{{ url_for('teacher.enter_results') }}" class="space-y-6">
-        <div>
-            <label for="class_name" class="block text-sm font-medium text-gray-700">1. Select Your Assigned Class</label>
-            <select name="class_name" id="class_name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
-                <option value="" selected disabled>-- Select a Class --</option>
-                {% for class in classes %}
-                <option value="{{ class }}">{{ class|title }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div id="student_selector" class="hidden">
-            <label for="student_id" class="block text-sm font-medium text-gray-700">2. Select Student</label>
-            <select name="student_id" id="student_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"></select>
-            <p id="loading_students" class="text-sm text-gray-500 mt-1 hidden">Loading students...</p>
-        </div>
-        <div id="result_fields" class="hidden pt-4 border-t border-gray-200 space-y-4">
-            <h3 class="text-lg font-medium text-gray-900">3. Enter Scores</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="subject" class="block text-sm font-medium text-gray-700">Subject</label>
-                    <input type="text" name="subject" id="subject" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="academic_year" class="block text-sm font-medium text-gray-700">Academic Year</label>
-                    <input type="text" name="academic_year" id="academic_year" required placeholder="e.g., 2025" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label for="ca_score" class="block text-sm font-medium text-gray-700">CA Score</label>
-                    <input type="number" name="ca_score" id="ca_score" min="0" max="100" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="midterm_score" class="block text-sm font-medium text-gray-700">Midterm Score</label>
-                    <input type="number" name="midterm_score" id="midterm_score" min="0" max="100" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="final_exam_score" class="block text-sm font-medium text-gray-700">Final Exam Score</label>
-                    <input type="number" name="final_exam_score" id="final_exam_score" min="0" max="100" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-            </div>
+    <!-- Step 1: Select Class, Term, Year -->
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+        <h3 class="text-base font-semibold text-gray-700 mb-4">Step 1: Select Class & Period</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label for="term" class="block text-sm font-medium text-gray-700">Term</label>
-                <select name="term" id="term" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="Term 1">Term 1</option>
-                    <option value="Term 2">Term 2</option>
-                    <option value="Term 3">Term 3</option>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                <select id="class_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Class --</option>
+                    {% for assignment in assignments %}
+                    <option value="{{ assignment.class_name }}" data-subjects="{{ assignment.subjects | join(',') }}">
+                        {{ assignment.class_name | title }}
+                    </option>
+                    {% endfor %}
                 </select>
             </div>
-            <div class="text-right">
-                <button type="submit" class="bg-cyan-600 text-white px-6 py-2 rounded-md hover:bg-cyan-700 transition duration-200">Submit Result</button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
+                <select id="year_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Year --</option>
+                    {% for period in all_periods %}
+                    <option value="{{ period.year }}" {% if period.year == current_period.year %}selected{% endif %}>
+                        {{ period.year }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Term</label>
+                <select id="term_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <option value="">-- Select Term --</option>
+                    <option value="Term 1" {% if current_period.term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                    <option value="Term 2" {% if current_period.term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                    <option value="Term 3" {% if current_period.term == 'Term 3' %}selected{% endif %}>Term 3</option>
+                </select>
             </div>
         </div>
-    </form>
-    {% else %}
-        <p class="text-center text-gray-600">You are not assigned to any classes. Please contact an administrator.</p>
-    {% endif %}
+    </div>
+
+    <!-- Step 2: Select Student -->
+    <div id="student_section" class="bg-white rounded-2xl shadow p-6 mb-6 hidden">
+        <h3 class="text-base font-semibold text-gray-700 mb-4">Step 2: Select Student</h3>
+        <input type="text" id="student_search" placeholder="Search by name or student number..."
+               class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 mb-3">
+        <div id="student_list" class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100"></div>
+    </div>
+
+    <!-- Step 3: Enter Scores -->
+    <div id="scores_section" class="bg-white rounded-2xl shadow p-6 hidden">
+        <h3 class="text-base font-semibold text-gray-700 mb-1">Step 3: Enter Scores</h3>
+        <p id="selected_student_name" class="text-sm text-cyan-600 font-medium mb-4"></p>
+
+        <form method="POST" action="{{ url_for('teacher.enter_results') }}" id="results_form">
+            <input type="hidden" name="student_id" id="hidden_student_id">
+            <input type="hidden" name="class_name" id="hidden_class_name">
+            <input type="hidden" name="term" id="hidden_term">
+            <input type="hidden" name="academic_year" id="hidden_year">
+
+            <div id="subjects_list" class="space-y-3 mb-6"></div>
+
+            <div class="flex justify-end">
+                <button type="submit" class="px-6 py-2 text-sm font-medium text-white bg-cyan-600 rounded-md hover:bg-cyan-700">
+                    Save Results
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const classSelect = document.getElementById('class_name');
-    const studentSelectorDiv = document.getElementById('student_selector');
-    const studentSelect = document.getElementById('student_id');
-    const loadingMessage = document.getElementById('loading_students');
-    const resultFieldsDiv = document.getElementById('result_fields');
+    const classSelect = document.getElementById('class_select');
+    const yearSelect = document.getElementById('year_select');
+    const termSelect = document.getElementById('term_select');
+    const studentSection = document.getElementById('student_section');
+    const studentSearch = document.getElementById('student_search');
+    const studentList = document.getElementById('student_list');
+    const scoresSection = document.getElementById('scores_section');
+    const subjectsList = document.getElementById('subjects_list');
 
-    classSelect.addEventListener('change', function() {
-        const selectedClass = this.value;
-        if (!selectedClass) return;
+    let allStudents = [];
+    let selectedSubjects = [];
 
-        loadingMessage.classList.remove('hidden');
-        studentSelectorDiv.classList.remove('hidden');
-        studentSelect.innerHTML = '<option value="" selected disabled>-- Loading... --</option>';
-        resultFieldsDiv.classList.add('hidden');
-
-        const formData = new FormData();
-        formData.append('class_name', selectedClass);
-
-        // *** THE FIX IS HERE: Calling the correct endpoint ***
-        fetch("{{ url_for('teacher.get_students_for_class_list') }}", { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                loadingMessage.classList.add('hidden');
-                studentSelect.innerHTML = '<option value="" selected disabled>-- Select a Student --</option>';
-                if (data.error) {
-                    alert(data.error);
-                    return;
-                }
-                data.forEach(student => {
-                    const option = document.createElement('option');
-                    option.value = student.student_id;
-                    option.textContent = `${student.last_name}, ${student.first_name} (${student.student_number})`;
-                    studentSelect.appendChild(option);
-                });
-            });
-    });
-
-    studentSelect.addEventListener('change', function() {
-        if (this.value) {
-            resultFieldsDiv.classList.remove('hidden');
+    function checkStep1() {
+        if (classSelect.value && yearSelect.value && termSelect.value) {
+            loadStudents();
         } else {
-            resultFieldsDiv.classList.add('hidden');
+            studentSection.classList.add('hidden');
+            scoresSection.classList.add('hidden');
         }
+    }
+
+    function loadStudents() {
+        const formData = new FormData();
+        formData.append('class_name', classSelect.value);
+        fetch("{{ url_for('teacher.get_students_for_class') }}", { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                allStudents = data;
+                renderStudents(data);
+                studentSection.classList.remove('hidden');
+                scoresSection.classList.add('hidden');
+            });
+    }
+
+    function renderStudents(students) {
+        if (students.length === 0) {
+            studentList.innerHTML = '<p class="p-3 text-sm text-gray-400 text-center">No students found.</p>';
+            return;
+        }
+        studentList.innerHTML = students.map(s => `
+            <div class="p-3 hover:bg-cyan-50 cursor-pointer flex justify-between items-center student-item"
+                 data-id="${s.id}" data-name="${s.name}" data-number="${s.student_number}">
+                <span class="text-sm font-medium text-gray-800">${s.name}</span>
+                <span class="text-xs text-gray-400">${s.student_number}</span>
+            </div>
+        `).join('');
+
+        document.querySelectorAll('.student-item').forEach(item => {
+            item.addEventListener('click', () => selectStudent(item));
+        });
+    }
+
+    function selectStudent(item) {
+        document.querySelectorAll('.student-item').forEach(i => i.classList.remove('bg-cyan-100'));
+        item.classList.add('bg-cyan-100');
+
+        const studentId = item.dataset.id;
+        const studentName = item.dataset.name;
+        const studentNumber = item.dataset.number;
+
+        document.getElementById('hidden_student_id').value = studentId;
+        document.getElementById('hidden_class_name').value = classSelect.value;
+        document.getElementById('hidden_term').value = termSelect.value;
+        document.getElementById('hidden_year').value = yearSelect.value;
+        document.getElementById('selected_student_name').textContent =
+            `Entering results for: ${studentName} (${studentNumber})`;
+
+        // Get subjects for selected class
+        const selectedOption = classSelect.options[classSelect.selectedIndex];
+        selectedSubjects = selectedOption.dataset.subjects ? selectedOption.dataset.subjects.split(',') : [];
+
+        // Load existing results
+        const formData = new FormData();
+        formData.append('student_id', studentId);
+        formData.append('term', termSelect.value);
+        formData.append('academic_year', yearSelect.value);
+
+        fetch("{{ url_for('teacher.get_existing_results') }}", { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(existing => {
+                const existingMap = {};
+                existing.forEach(r => existingMap[r.subject] = r.score);
+                renderSubjects(selectedSubjects, existingMap);
+                scoresSection.classList.remove('hidden');
+            });
+    }
+
+    function renderSubjects(subjects, existingScores) {
+        subjectsList.innerHTML = subjects.map(subject => `
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <label class="text-sm font-medium text-gray-700 w-1/2">${subject}</label>
+                <div class="flex items-center space-x-2">
+                    <input type="hidden" name="subject[]" value="${subject}">
+                    <input type="number" name="score[]"
+                           value="${existingScores[subject] !== undefined ? existingScores[subject] : ''}"
+                           min="0" max="100" step="0.5" placeholder="0-100"
+                           class="w-24 rounded-md border-gray-300 shadow-sm text-sm focus:border-cyan-500 focus:ring-cyan-500">
+                    <span class="text-xs text-gray-400">/ 100</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    studentSearch.addEventListener('input', e => {
+        const query = e.target.value.toLowerCase();
+        const filtered = allStudents.filter(s =>
+            s.name.toLowerCase().includes(query) || s.student_number.toLowerCase().includes(query)
+        );
+        renderStudents(filtered);
     });
-});
+
+    classSelect.addEventListener('change', checkStep1);
+    yearSelect.addEventListener('change', checkStep1);
+    termSelect.addEventListener('change', checkStep1);
 </script>
 {% endblock %}

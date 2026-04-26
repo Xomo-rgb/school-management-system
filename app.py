@@ -8,8 +8,8 @@ from routes.admin import admin_bp
 from routes.user import user_bp
 from routes.assignment import assignment_bp
 from routes.profile import profile_bp
-from routes.curriculum import curriculum_bp
-from db import close_db
+from routes.temp_dashboard import temp_dashboard_bp
+from firebase_db import close_db
 from whitenoise import WhiteNoise
 
 
@@ -33,7 +33,7 @@ def create_app():
     app.register_blueprint(user_bp, url_prefix='/users')
     app.register_blueprint(assignment_bp, url_prefix='/assignments')
     app.register_blueprint(profile_bp, url_prefix='/profile')
-    app.register_blueprint(curriculum_bp, url_prefix='/curriculum')
+    app.register_blueprint(temp_dashboard_bp)
 
     # Default route
     @app.route('/')

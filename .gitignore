@@ -6,9 +6,46 @@ __pycache__/
 .vscode/
 .idea/
 
+# Python compiled files
+*.pyc
+*.pyo
+*.pyd
+*$py.class
+
+# Environment and local settings
+.env
+*.env
+
+# Logs and coverage
+*.log
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
 
 # Temporary utility scripts that we don't need in production
 hash_passwords.py
 reset_all_passwords.py
 get_new_password.py
 temp_hasher.py
+
+# Firebase credentials (KEEP SECRET!)
+firebase-credentials.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Environment and local settings
+.env
+*.env
+
+# Python compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Local OS files
+.DS_Store
+Thumbs.db

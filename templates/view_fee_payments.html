@@ -1,7 +1,7 @@
 {% if session.role == 'accounts' %}
     {% extends "accounts_base.html" %}
 {% elif session.role == 'school_admin' %}
-    {% extends "school_admin_base.html" %}
+    {% extends "admin_base.html" %}
 {% else %}
     {% extends "admin_base.html" %}
 {% endif %}
@@ -38,6 +38,19 @@
         <button type="button" id="reset_filters" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 text-sm">Reset Filters</button>
     </form>
 </div>
+
+<!-- Download PDF -->
+<div class="mb-4 flex justify-end">
+    <form method="POST" action="{{ url_for('admin.fee_payments_pdf') }}" id="pdf_form">
+        <input type="hidden" name="academic_year" id="pdf_academic_year">
+        <input type="hidden" name="term" id="pdf_term">
+        <input type="hidden" name="class_name" id="pdf_class_name">
+        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+            Download PDF
+        </button>
+    </form>
+</div>
+
 <!-- Payments Table -->
 <div class="overflow-x-auto bg-white rounded-lg shadow">
     <table class="min-w-full divide-y divide-gray-200">
@@ -67,6 +80,11 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch("{{ url_for('admin.filter_fee_payments') }}", { method: 'POST', body: formData })
         .then(response => response.json())
         .then(data => {
+            // Set PDF form fields
+            document.getElementById('pdf_academic_year').value = document.getElementById('academic_year_filter').value;
+            document.getElementById('pdf_term').value = document.getElementById('term_filter').value;
+            document.getElementById('pdf_class_name').value = document.getElementById('class_filter').value;
+            
             paymentsTbody.innerHTML = '';
             if (data.payments && data.payments.length > 0) {
                 data.payments.forEach(p => {

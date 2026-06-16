@@ -1,25 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Student Registration</title>
-<script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4 py-8">
-<div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl">
-<div class="flex justify-between items-center mb-6">
-<h2 class="text-2xl font-bold text-gray-800">Student Registration Form</h2>
-<a href="{{ url_for('student.view_students') }}" class="text-sm font-medium text-gray-600 hover:text-green-600">&larr; Back to Student List</a>
+{% extends "admin_base.html" %}
+
+{% block title %}Register Student{% endblock %}
+
+{% block header_title %}
+<div class="flex items-center space-x-3">
+    <a href="{{ url_for('student.view_students') }}" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
+    <span>Register New Student</span>
 </div>
+{% endblock %}
+
+{% block content %}
+{% set form_data = form_data or {} %}
+
 <!-- Flash Messages -->
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-    <div class="mb-4 space-y-2">
+    <div class="mb-5 space-y-2">
       {% for category, message in messages %}
-        <div class="p-3 rounded-md text-sm
-                   {% if category == 'error' %} bg-red-100 text-red-800 border border-red-200 {% endif %}
-                   {% if category == 'success' %} bg-green-100 text-green-800 border border-green-200 {% endif %}">
+        <div class="p-3 rounded-lg text-sm {% if category == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
           {{ message }}
         </div>
       {% endfor %}
@@ -27,102 +27,165 @@
   {% endif %}
 {% endwith %}
 
-<form method="POST" action="{{ url_for('student.register_student') }}" class="space-y-6">
-  <!-- We pass request.form back as form_data on validation error to repopulate fields -->
-  {% set form_data = form_data or {} %}
-  
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div>
-      <label for="first_name" class="block text-sm font-medium text-gray-700">First Name *</label>
-      <input type="text" id="first_name" name="first_name" required value="{{ form_data.first_name or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" />
-    </div>
-    <div>
-      <label for="middle_name" class="block text-sm font-medium text-gray-700">Middle Name</label>
-      <input type="text" id="middle_name" name="middle_name" value="{{ form_data.middle_name or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" />
-    </div>
-    <div>
-      <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name *</label>
-      <input type="text" id="last_name" name="last_name" required value="{{ form_data.last_name or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" />
-    </div>
-  </div>
+<form method="POST" action="{{ url_for('student.register_student') }}">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div>
-      <label for="dob" class="block text-sm font-medium text-gray-700">Date of Birth *</label>
-      <input type="date" id="dob" name="dob" required value="{{ form_data.dob or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
-    </div>
-    <div>
-      <label for="gender" class="block text-sm font-medium text-gray-700">Gender *</label>
-      <select id="gender" name="gender" required
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 bg-white">
-        <option value="" {% if not form_data.gender %}selected{% endif %}>-- Select --</option>
-        <option value="female" {% if form_data.gender == 'female' %}selected{% endif %}>Female</option>
-        <option value="male" {% if form_data.gender == 'male' %}selected{% endif %}>Male</option>
-      </select>
-    </div>
-    <div>
-      <label for="class_name" class="block text-sm font-medium text-gray-700">Class *</label>
-      <select id="class_name" name="class_name" required
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 bg-white">
-        <option value="" {% if not form_data.class_name %}selected{% endif %}>-- Select --</option>
-        <option value="nursery" {% if form_data.class_name == 'nursery' %}selected{% endif %}>Nursery</option>
-        <option value="reception" {% if form_data.class_name == 'reception' %}selected{% endif %}>Reception</option>
-        <option value="standard 1" {% if form_data.class_name == 'standard 1' %}selected{% endif %}>Standard 1</option>
-        <option value="standard 2" {% if form_data.class_name == 'standard 2' %}selected{% endif %}>Standard 2</option>
-        <option value="standard 3" {% if form_data.class_name == 'standard 3' %}selected{% endif %}>Standard 3</option>
-        <option value="standard 4" {% if form_data.class_name == 'standard 4' %}selected{% endif %}>Standard 4</option>
-        <option value="standard 5" {% if form_data.class_name == 'standard 5' %}selected{% endif %}>Standard 5</option>
-        <option value="standard 6" {% if form_data.class_name == 'standard 6' %}selected{% endif %}>Standard 6</option>
-        <option value="standard 7" {% if form_data.class_name == 'standard 7' %}selected{% endif %}>Standard 7</option>
-        <option value="standard 8" {% if form_data.class_name == 'standard 8' %}selected{% endif %}>Standard 8</option>
-      </select>
-    </div>
-  </div>
+    <!-- LEFT: Form Sections -->
+    <div class="lg:col-span-2 space-y-5">
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <label for="guardian_contact" class="block text-sm font-medium text-gray-700">Guardian's Phone *</label>
-      <input type="tel" id="guardian_contact" name="guardian_contact" required value="{{ form_data.guardian_contact or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
-    </div>
-    <div>
-    <label for="government_number" id="gov_label" class="block text-sm font-medium text-gray-700">Government Number <span id="gov_required_star" class="text-red-500 hidden">*</span></label>
-      <input type="text" id="government_number" name="government_number" value="{{ form_data.government_number or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" />
-      <p id="gov_hint" class="text-xs text-gray-400 mt-1 hidden">Required for Standard 1 and above.</p>
-    </div>
-  </div>
+        <!-- Personal Information -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Personal Information</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">First Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="first_name" required value="{{ form_data.first_name or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Middle Name</label>
+                        <input type="text" name="middle_name" value="{{ form_data.middle_name or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Last Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="last_name" required value="{{ form_data.last_name or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Date of Birth <span class="text-red-500">*</span></label>
+                        <input type="date" name="dob" required value="{{ form_data.dob or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Gender <span class="text-red-500">*</span></label>
+                        <select name="gender" required
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                            <option value="" {% if not form_data.gender %}selected{% endif %}>-- Select --</option>
+                            <option value="female" {% if form_data.gender == 'female' %}selected{% endif %}>Female</option>
+                            <option value="male" {% if form_data.gender == 'male' %}selected{% endif %}>Male</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  <div>
-    <label for="special_needs" class="block text-sm font-medium text-gray-700">Special Needs / Medical Info</label>
-    <textarea id="special_needs" name="special_needs" rows="3"
-      class="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
-      placeholder="e.g., Allergies, medical conditions, etc.">{{ form_data.special_needs or '' }}</textarea>
-  </div>
+        <!-- Academic Information -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Academic Information</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Class <span class="text-red-500">*</span></label>
+                        <select id="class_name" name="class_name" required
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                            <option value="">-- Select Class --</option>
+                            {% for c in ['nursery','reception','standard 1','standard 2','standard 3','standard 4','standard 5','standard 6','standard 7','standard 8'] %}
+                            <option value="{{ c }}" {% if form_data.class_name == c %}selected{% endif %}>{{ c | title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Enrollment Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="enrollment_date" required value="{{ form_data.enrollment_date or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                        Government Number <span id="gov_required_star" class="text-red-500 hidden">*</span>
+                    </label>
+                    <input type="text" id="government_number" name="government_number" value="{{ form_data.government_number or '' }}"
+                           class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    <p id="gov_hint" class="text-xs text-gray-400 mt-1 hidden">Required for Standard 1 and above.</p>
+                </div>
+            </div>
+        </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <label for="address" class="block text-sm font-medium text-gray-700">Address *</label>
-      <input type="text" id="address" name="address" required value="{{ form_data.address or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
+        <!-- Contact & Additional -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Contact & Additional Info</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Guardian's Phone <span class="text-red-500">*</span></label>
+                        <input type="tel" name="guardian_contact" required value="{{ form_data.guardian_contact or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Address <span class="text-red-500">*</span></label>
+                        <input type="text" name="address" required value="{{ form_data.address or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Special Needs / Medical Info</label>
+                    <textarea name="special_needs" rows="3" placeholder="e.g. allergies, medical conditions, learning disabilities..."
+                              class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition resize-none">{{ form_data.special_needs or '' }}</textarea>
+                </div>
+            </div>
+        </div>
     </div>
-    <div>
-      <label for="enrollment_date" class="block text-sm font-medium text-gray-700">Enrollment Date *</label>
-      <input type="date" id="enrollment_date" name="enrollment_date" required value="{{ form_data.enrollment_date or '' }}"
-        class="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
-    </div>
-  </div>
 
-  <div class="text-center pt-4">
-    <button type="submit"
-      class="bg-green-600 text-white px-8 py-2 rounded-md hover:bg-green-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-      Register Student
-    </button>
-  </div>
+    <!-- RIGHT: Summary + Submit -->
+    <div class="space-y-5">
+        <!-- Summary Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mx-auto mb-4">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+            <h3 class="text-center text-sm font-semibold text-gray-700 mb-4">Registration Summary</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between text-gray-500">
+                    <span>Status</span>
+                    <span class="font-medium text-green-600">New Student</span>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Student ID</span>
+                    <span class="font-medium text-gray-700">Auto-assigned</span>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Default Password</span>
+                    <span class="font-medium text-gray-700">N/A</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checklist -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Required Fields</h3>
+            <ul class="space-y-2 text-sm text-gray-500">
+                <li class="flex items-center space-x-2"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>First & Last Name</span></li>
+                <li class="flex items-center space-x-2"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Date of Birth & Gender</span></li>
+                <li class="flex items-center space-x-2"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Class & Enrollment Date</span></li>
+                <li class="flex items-center space-x-2"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Guardian Phone & Address</span></li>
+                <li class="flex items-center space-x-2 text-orange-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Govt. No. (Std 1+)</span></li>
+            </ul>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full flex items-center justify-center space-x-2 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition font-medium text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+            <span>Register Student</span>
+        </button>
+        <a href="{{ url_for('student.view_students') }}"
+           class="w-full flex items-center justify-center text-gray-500 hover:text-gray-700 text-sm py-2 transition">
+            Cancel
+        </a>
+    </div>
+</div>
 </form>
 
 <script>
@@ -133,8 +196,7 @@
   const noGovClasses = ['nursery', 'reception', ''];
 
   function updateGovField() {
-    const selected = classSelect.value;
-    const isRequired = !noGovClasses.includes(selected);
+    const isRequired = !noGovClasses.includes(classSelect.value);
     govInput.required = isRequired;
     govStar.classList.toggle('hidden', !isRequired);
     govHint.classList.toggle('hidden', !isRequired);
@@ -143,6 +205,4 @@
   classSelect.addEventListener('change', updateGovField);
   updateGovField();
 </script>
-</div>
-</body>
-</html>
+{% endblock %}

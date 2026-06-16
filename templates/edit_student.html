@@ -1,136 +1,176 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Student</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-8">
-    <div class="max-w-4xl mx-auto">
-        <div class="mb-6 flex items-center justify-between">
-            <h2 class="text-2xl font-bold text-gray-800">Edit Student Information</h2>
-            <a href="{{ url_for('student.view_students') }}"
-               class="flex items-center text-sm text-gray-600 hover:text-green-600">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                Back to Student List
-            </a>
+{% extends "admin_base.html" %}
+
+{% block title %}Edit Student{% endblock %}
+
+{% block header_title %}
+<div class="flex items-center space-x-3">
+    <a href="{{ url_for('student.view_students') }}" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
+    <span>Edit Student</span>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-5 space-y-2">
+      {% for category, message in messages %}
+        <div class="p-3 rounded-lg text-sm {% if category == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<form method="post" action="{{ url_for('student.edit_student', student_id=student.id) }}">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- LEFT: Form Sections -->
+    <div class="lg:col-span-2 space-y-5">
+
+        <!-- Personal Information -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Personal Information</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">First Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="first_name" required value="{{ student.first_name or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Middle Name</label>
+                        <input type="text" name="middle_name" value="{{ student.middle_name or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Last Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="last_name" required value="{{ student.last_name or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Date of Birth <span class="text-red-500">*</span></label>
+                        <input type="date" name="dob" required value="{{ student.dob or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Gender <span class="text-red-500">*</span></label>
+                        <select name="gender" required
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                            <option value="female" {% if student.gender == 'female' %}selected{% endif %}>Female</option>
+                            <option value="male" {% if student.gender == 'male' %}selected{% endif %}>Male</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="mb-4 space-y-2">
-              {% for category, message in messages %}
-                <div class="p-3 rounded-md text-sm
-                           {% if category == 'error' %} bg-red-100 text-red-800 border border-red-200 {% endif %}
-                           {% if category == 'success' %} bg-green-100 text-green-800 border border-green-200 {% endif %}">
-                  {{ message }}
-                </div>
-              {% endfor %}
+        <!-- Academic Information -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Academic Information</h3>
             </div>
-          {% endif %}
-        {% endwith %}
-
-        <form method="post" action="{{ url_for('student.edit_student', student_id=student.id) }}" class="bg-white shadow-md rounded-lg p-6 space-y-6">
-            <!-- Personal Information Section -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                    <input type="text" id="first_name" name="first_name" value="{{ student.first_name or '' }}" required
-                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Class <span class="text-red-500">*</span></label>
+                        <select id="class_name" name="class_name" required
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                            {% for c in ['nursery','reception','standard 1','standard 2','standard 3','standard 4','standard 5','standard 6','standard 7','standard 8'] %}
+                            <option value="{{ c }}" {% if student.class_name == c %}selected{% endif %}>{{ c | title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Enrollment Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="enrollment_date" required value="{{ student.enrollment_date or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
                 </div>
                 <div>
-                    <label for="middle_name" class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                    <input type="text" id="middle_name" name="middle_name" value="{{ student.middle_name or '' }}"
-                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
-                </div>
-                <div>
-                    <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" value="{{ student.last_name or '' }}" required
-                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
-                </div>
-            </div>
-
-            <!-- Academic and Demographic Section -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                    <input type="date" id="dob" name="dob" value="{{ student.dob or '' }}" required
-                           class="w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                    <select id="gender" name="gender" required
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
-                        <option value="female" {% if student.gender == 'female' %}selected{% endif %}>Female</option>
-                        <option value="male" {% if student.gender == 'male' %}selected{% endif %}>Male</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="class_name" class="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                    <select id="class_name" name="class_name" required
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
-                        {% set classes = ['nursery', 'reception', 'standard 1', 'standard 2', 'standard 3', 'standard 4', 'standard 5', 'standard 6', 'standard 7', 'standard 8'] %}
-                        {% for cls in classes %}
-                            <option value="{{ cls }}" {% if student.class_name == cls %}selected{% endif %}>{{ cls|title }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <!-- Contact and Official Information -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="guardian_contact" class="block text-sm font-medium text-gray-700 mb-1">Guardian's Phone Number</label>
-                    <input type="tel" id="guardian_contact" name="guardian_contact" value="{{ student.guardian_contact or '' }}" required
-                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
-                </div>
-                <div>
-                    <label for="government_number" id="gov_label" class="block text-sm font-medium text-gray-700 mb-1">Government Number <span id="gov_required_star" class="text-red-500 hidden">*</span></label>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                        Government Number <span id="gov_required_star" class="text-red-500 hidden">*</span>
+                    </label>
                     <input type="text" id="government_number" name="government_number" value="{{ student.government_number or '' }}"
-                           placeholder="Enter government assigned number"
-                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                           class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
                     <p id="gov_hint" class="text-xs text-gray-400 mt-1 hidden">Required for Standard 1 and above.</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Additional Information -->
-            <div>
-                <label for="special_needs" class="block text-sm font-medium text-gray-700 mb-1">Special Needs / Medical Information</label>
-                <textarea name="special_needs" id="special_needs" rows="3"
-                          class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                          placeholder="Enter any medical conditions or special needs">{{ student.special_needs or '' }}</textarea>
+        <!-- Contact & Additional -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Contact & Additional Info</h3>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input type="text" id="address" name="address" value="{{ student.address or '' }}" required
-                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Guardian's Phone <span class="text-red-500">*</span></label>
+                        <input type="tel" name="guardian_contact" required value="{{ student.guardian_contact or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Address <span class="text-red-500">*</span></label>
+                        <input type="text" name="address" required value="{{ student.address or '' }}"
+                               class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    </div>
                 </div>
                 <div>
-                    <label for="enrollment_date" class="block text-sm font-medium text-gray-700 mb-1">Date of Enrollment</label>
-                    <input type="date" id="enrollment_date" name="enrollment_date" value="{{ student.enrollment_date or '' }}" required
-                           class="w-full rounded-md border-gray-300 shadow-sm">
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Special Needs / Medical Info</label>
+                    <textarea name="special_needs" rows="3" placeholder="e.g. allergies, medical conditions..."
+                              class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition resize-none">{{ student.special_needs or '' }}</textarea>
                 </div>
             </div>
-
-            <!-- Form Actions -->
-            <div class="flex justify-end space-x-3 pt-4">
-                <a href="{{ url_for('student.view_students') }}"
-                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">
-                    Cancel
-                </a>
-                <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700">
-                    Update Student
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
+
+    <!-- RIGHT: Info + Submit -->
+    <div class="space-y-5">
+        <!-- Student Info Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mx-auto mb-4">
+                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+            </div>
+            <h3 class="text-center text-sm font-semibold text-gray-700 mb-4">Editing Student</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between text-gray-500">
+                    <span>Student No.</span>
+                    <span class="font-medium text-gray-700">{{ student.student_number }}</span>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Current Class</span>
+                    <span class="font-medium text-gray-700">{{ student.class_name | title }}</span>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Status</span>
+                    <span class="font-medium text-indigo-600">Editing</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full flex items-center justify-center space-x-2 bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition font-medium text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Save Changes</span>
+        </button>
+        <a href="{{ url_for('student.view_students') }}"
+           class="w-full flex items-center justify-center text-gray-500 hover:text-gray-700 text-sm py-2 transition">
+            Cancel
+        </a>
+    </div>
+</div>
+</form>
 
 <script>
   const classSelect = document.getElementById('class_name');
@@ -149,5 +189,4 @@
   classSelect.addEventListener('change', updateGovField);
   updateGovField();
 </script>
-</body>
-</html>
+{% endblock %}

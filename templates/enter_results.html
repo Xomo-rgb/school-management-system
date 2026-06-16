@@ -19,188 +19,224 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Step 1: Select Class, Term, Year -->
-    <div class="bg-white rounded-2xl shadow p-6 mb-6">
-        <h3 class="text-base font-semibold text-gray-700 mb-4">Step 1: Select Class & Period</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                <select id="class_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
-                    <option value="">-- Select Class --</option>
-                    {% for assignment in assignments %}
-                    <option value="{{ assignment.class_name }}" data-subjects="{{ assignment.subjects | join(',') }}">
-                        {{ assignment.class_name | title }}
-                    </option>
-                    {% endfor %}
-                </select>
+    <!-- Period banner -->
+    <div class="flex items-center justify-between px-4 py-3 mb-6 rounded-xl" style="background-color: #E8F5F0; border: 1px solid #b7ddd1;">
+        <div class="flex items-center space-x-2">
+            <svg class="w-4 h-4 flex-shrink-0" style="color: #1F7A5C;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-sm font-medium" style="color: #1F7A5C;">
+                Recording results for: <strong>{{ current_period.year }} &mdash; {{ current_period.term }}</strong>
+            </span>
+        </div>
+        {% if current_period.year == 'Not Set' %}
+        <span class="text-xs text-red-600 font-medium">No active period — contact admin</span>
+        {% endif %}
+    </div>
+
+    <!-- Class cards -->
+    {% if assignments %}
+    <div class="mb-6">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Select a class to enter results</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="class_cards">
+            {% for assignment in assignments %}
+            <button type="button"
+                    onclick="selectClass('{{ assignment.class_name }}', '{{ assignment.subjects | join(',') }}', this)"
+                    class="class-card text-left px-4 py-4 rounded-xl border-2 border-gray-100 bg-white hover:border-cyan-300 hover:shadow-sm transition-all">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style="background-color: #E8F5F0;">
+                    <svg class="w-4 h-4" style="color: #1F7A5C;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <p class="text-sm font-semibold text-gray-800">{{ assignment.class_name | title }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ assignment.subjects | length }} subject{{ 's' if assignment.subjects | length != 1 }}</p>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-sm text-amber-700">
+        You have no classes assigned yet. Contact the admin.
+    </div>
+    {% endif %}
+
+    <!-- Student list (appears after class selected) -->
+    <div id="student_section" class="hidden">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800" id="class_label">Students</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Click a student to enter their results</p>
+                </div>
+                <input type="text" id="student_search" placeholder="Search name or number…"
+                       class="text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-200 w-52">
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
-                <select id="year_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
-                    <option value="">-- Select Year --</option>
-                    {% for period in all_periods %}
-                    <option value="{{ period.year }}" {% if period.year == current_period.year %}selected{% endif %}>
-                        {{ period.year }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Term</label>
-                <select id="term_select" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500">
-                    <option value="">-- Select Term --</option>
-                    <option value="Term 1" {% if current_period.term == 'Term 1' %}selected{% endif %}>Term 1</option>
-                    <option value="Term 2" {% if current_period.term == 'Term 2' %}selected{% endif %}>Term 2</option>
-                    <option value="Term 3" {% if current_period.term == 'Term 3' %}selected{% endif %}>Term 3</option>
-                </select>
-            </div>
+            <div id="student_list" class="divide-y divide-gray-50"></div>
+            <div id="no_students" class="hidden px-5 py-8 text-center text-sm text-gray-400">No students found.</div>
         </div>
     </div>
 
-    <!-- Step 2: Select Student -->
-    <div id="student_section" class="bg-white rounded-2xl shadow p-6 mb-6 hidden">
-        <h3 class="text-base font-semibold text-gray-700 mb-4">Step 2: Select Student</h3>
-        <input type="text" id="student_search" placeholder="Search by name or student number..."
-               class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 mb-3">
-        <div id="student_list" class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100"></div>
-    </div>
+</div>
 
-    <!-- Step 3: Enter Scores -->
-    <div id="scores_section" class="bg-white rounded-2xl shadow p-6 hidden">
-        <h3 class="text-base font-semibold text-gray-700 mb-1">Step 3: Enter Scores</h3>
-        <p id="selected_student_name" class="text-sm text-cyan-600 font-medium mb-4"></p>
-
-        <form method="POST" action="{{ url_for('teacher.enter_results') }}" id="results_form">
-            <input type="hidden" name="student_id" id="hidden_student_id">
-            <input type="hidden" name="class_name" id="hidden_class_name">
-            <input type="hidden" name="term" id="hidden_term">
-            <input type="hidden" name="academic_year" id="hidden_year">
-
-            <div id="subjects_list" class="space-y-3 mb-6"></div>
-
-            <div class="flex justify-end">
-                <button type="submit" class="px-6 py-2 text-sm font-medium text-white bg-cyan-600 rounded-md hover:bg-cyan-700">
-                    Save Results
-                </button>
+<!-- Score Entry Modal -->
+<div id="scoreModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeScoreModal()"></div>
+    <div class="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="h-1 w-full bg-cyan-500"></div>
+        <div class="flex items-start justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <div>
+                <h2 id="modal_student_name" class="text-base font-semibold text-gray-800"></h2>
+                <p id="modal_student_meta" class="text-xs text-gray-400 mt-0.5"></p>
             </div>
-        </form>
+            <button onclick="closeScoreModal()" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition ml-4 shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <!-- Body -->
+        <div class="overflow-y-auto flex-1 px-6 py-4">
+            <form method="POST" action="{{ url_for('teacher.enter_results') }}" id="results_form">
+                <input type="hidden" name="student_id"    id="hidden_student_id">
+                <input type="hidden" name="class_name"    id="hidden_class_name">
+                <input type="hidden" name="term"          id="hidden_term"  value="{{ current_period.term }}">
+                <input type="hidden" name="academic_year" id="hidden_year"  value="{{ current_period.year }}">
+                <div id="subjects_list" class="space-y-2"></div>
+            </form>
+        </div>
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-gray-100 shrink-0 flex justify-end gap-3">
+            <button type="button" onclick="closeScoreModal()"
+                    class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                Cancel
+            </button>
+            <button type="submit" form="results_form"
+                    class="px-5 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90 bg-cyan-600">
+                Save Results
+            </button>
+        </div>
     </div>
 </div>
 
 <script>
-    const classSelect = document.getElementById('class_select');
-    const yearSelect = document.getElementById('year_select');
-    const termSelect = document.getElementById('term_select');
-    const studentSection = document.getElementById('student_section');
-    const studentSearch = document.getElementById('student_search');
-    const studentList = document.getElementById('student_list');
-    const scoresSection = document.getElementById('scores_section');
-    const subjectsList = document.getElementById('subjects_list');
+    const CURRENT_YEAR = "{{ current_period.year }}";
+    const CURRENT_TERM = "{{ current_period.term }}";
 
-    let allStudents = [];
-    let selectedSubjects = [];
+    let allStudents      = [];
+    let activeClassName  = '';
+    let activeSubjects   = [];
 
-    function checkStep1() {
-        if (classSelect.value && yearSelect.value && termSelect.value) {
-            loadStudents();
-        } else {
-            studentSection.classList.add('hidden');
-            scoresSection.classList.add('hidden');
-        }
-    }
+    function selectClass(className, subjectsStr, btn) {
+        // Highlight selected card
+        document.querySelectorAll('.class-card').forEach(c => {
+            c.classList.remove('border-cyan-500', 'bg-cyan-50');
+            c.classList.add('border-gray-100');
+        });
+        btn.classList.remove('border-gray-100');
+        btn.classList.add('border-cyan-500', 'bg-cyan-50');
 
-    function loadStudents() {
+        activeClassName = className;
+        activeSubjects  = subjectsStr ? subjectsStr.split(',').filter(Boolean) : [];
+
+        document.getElementById('class_label').textContent = className.charAt(0).toUpperCase() + className.slice(1) + ' — Students';
+        document.getElementById('student_search').value = '';
+
         const formData = new FormData();
-        formData.append('class_name', classSelect.value);
+        formData.append('class_name', className);
         fetch("{{ url_for('teacher.get_students_for_class') }}", { method: 'POST', body: formData })
             .then(r => r.json())
             .then(data => {
                 allStudents = data;
                 renderStudents(data);
-                studentSection.classList.remove('hidden');
-                scoresSection.classList.add('hidden');
+                document.getElementById('student_section').classList.remove('hidden');
             });
     }
 
     function renderStudents(students) {
+        const list   = document.getElementById('student_list');
+        const empty  = document.getElementById('no_students');
         if (students.length === 0) {
-            studentList.innerHTML = '<p class="p-3 text-sm text-gray-400 text-center">No students found.</p>';
+            list.innerHTML = '';
+            empty.classList.remove('hidden');
             return;
         }
-        studentList.innerHTML = students.map(s => `
-            <div class="p-3 hover:bg-cyan-50 cursor-pointer flex justify-between items-center student-item"
-                 data-id="${s.id}" data-name="${s.name}" data-number="${s.student_number}">
-                <span class="text-sm font-medium text-gray-800">${s.name}</span>
-                <span class="text-xs text-gray-400">${s.student_number}</span>
+        empty.classList.add('hidden');
+        list.innerHTML = students.map((s, i) => `
+            <div class="flex items-center justify-between px-5 py-3.5 hover:bg-cyan-50 cursor-pointer transition student-item"
+                 data-id="${s.id}" data-name="${s.name}" data-number="${s.student_number}"
+                 onclick="openScoreModal('${s.id}', '${s.name.replace(/'/g,"\\'")}', '${s.student_number}')">
+                <div class="flex items-center space-x-3">
+                    <span class="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center text-white flex-shrink-0"
+                          style="background-color: #0891b2;">${i + 1}</span>
+                    <span class="text-sm font-medium text-gray-800">${s.name}</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs text-gray-400">${s.student_number}</span>
+                    <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
             </div>
         `).join('');
-
-        document.querySelectorAll('.student-item').forEach(item => {
-            item.addEventListener('click', () => selectStudent(item));
-        });
     }
 
-    function selectStudent(item) {
-        document.querySelectorAll('.student-item').forEach(i => i.classList.remove('bg-cyan-100'));
-        item.classList.add('bg-cyan-100');
-
-        const studentId = item.dataset.id;
-        const studentName = item.dataset.name;
-        const studentNumber = item.dataset.number;
+    function openScoreModal(studentId, studentName, studentNumber) {
+        document.getElementById('modal_student_name').textContent = studentName;
+        document.getElementById('modal_student_meta').textContent =
+            studentNumber + '  ·  ' + activeClassName.charAt(0).toUpperCase() + activeClassName.slice(1) +
+            '  ·  ' + CURRENT_TERM + ', ' + CURRENT_YEAR;
 
         document.getElementById('hidden_student_id').value = studentId;
-        document.getElementById('hidden_class_name').value = classSelect.value;
-        document.getElementById('hidden_term').value = termSelect.value;
-        document.getElementById('hidden_year').value = yearSelect.value;
-        document.getElementById('selected_student_name').textContent =
-            `Entering results for: ${studentName} (${studentNumber})`;
+        document.getElementById('hidden_class_name').value = activeClassName;
 
-        // Get subjects for selected class
-        const selectedOption = classSelect.options[classSelect.selectedIndex];
-        selectedSubjects = selectedOption.dataset.subjects ? selectedOption.dataset.subjects.split(',') : [];
-
-        // Load existing results
+        // Load existing scores then open
         const formData = new FormData();
         formData.append('student_id', studentId);
-        formData.append('term', termSelect.value);
-        formData.append('academic_year', yearSelect.value);
+        formData.append('term', CURRENT_TERM);
+        formData.append('academic_year', CURRENT_YEAR);
 
         fetch("{{ url_for('teacher.get_existing_results') }}", { method: 'POST', body: formData })
             .then(r => r.json())
             .then(existing => {
                 const existingMap = {};
                 existing.forEach(r => existingMap[r.subject] = r.score);
-                renderSubjects(selectedSubjects, existingMap);
-                scoresSection.classList.remove('hidden');
+                renderSubjects(activeSubjects, existingMap);
+                document.getElementById('scoreModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
             });
     }
 
+    function closeScoreModal() {
+        document.getElementById('scoreModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
     function renderSubjects(subjects, existingScores) {
-        subjectsList.innerHTML = subjects.map(subject => `
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <label class="text-sm font-medium text-gray-700 w-1/2">${subject}</label>
+        document.getElementById('subjects_list').innerHTML = subjects.map(subject => `
+            <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-gray-50">
+                <label class="text-sm font-medium text-gray-700">${subject}</label>
                 <div class="flex items-center space-x-2">
                     <input type="hidden" name="subject[]" value="${subject}">
                     <input type="number" name="score[]"
                            value="${existingScores[subject] !== undefined ? existingScores[subject] : ''}"
-                           min="0" max="100" step="0.5" placeholder="0-100"
-                           class="w-24 rounded-md border-gray-300 shadow-sm text-sm focus:border-cyan-500 focus:ring-cyan-500">
-                    <span class="text-xs text-gray-400">/ 100</span>
+                           min="0" max="100" step="0.5" placeholder="—"
+                           class="w-24 text-sm text-center rounded-lg border border-gray-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-300">
+                    <span class="text-xs text-gray-400 w-10">/ 100</span>
                 </div>
             </div>
         `).join('');
     }
 
-    studentSearch.addEventListener('input', e => {
-        const query = e.target.value.toLowerCase();
-        const filtered = allStudents.filter(s =>
-            s.name.toLowerCase().includes(query) || s.student_number.toLowerCase().includes(query)
-        );
-        renderStudents(filtered);
+    document.getElementById('student_search').addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        renderStudents(allStudents.filter(s =>
+            s.name.toLowerCase().includes(q) || s.student_number.toLowerCase().includes(q)
+        ));
     });
 
-    classSelect.addEventListener('change', checkStep1);
-    yearSelect.addEventListener('change', checkStep1);
-    termSelect.addEventListener('change', checkStep1);
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeScoreModal();
+    });
 </script>
 {% endblock %}

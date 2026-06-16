@@ -21,27 +21,51 @@
     {% endwith %}
 
     <!-- Period Banner -->
-    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg flex items-center justify-between">
+    <div class="{% if is_term3 %}bg-blue-50 border-blue-500{% else %}bg-amber-50 border-amber-400{% endif %} border-l-4 p-4 mb-6 rounded-r-lg flex items-center justify-between">
         <div>
-            <p class="text-sm font-medium text-blue-800">Promoting students based on results from:</p>
-            <p class="text-lg font-bold text-blue-900">{{ current_period.year }} &mdash; {{ current_period.term }}</p>
+            <p class="text-sm font-medium {% if is_term3 %}text-blue-800{% else %}text-amber-800{% endif %}">
+                {% if is_term3 %}Promoting students based on results from:{% else %}Current period:{% endif %}
+            </p>
+            <p class="text-lg font-bold {% if is_term3 %}text-blue-900{% else %}text-amber-900{% endif %}">
+                {{ current_period.year }} &mdash; {{ current_period.term }}
+            </p>
         </div>
         <div class="text-right">
-            <p class="text-xs text-blue-600">Pass Mark</p>
-            <p class="text-2xl font-bold text-blue-800">{{ pass_mark }}%</p>
+            <p class="text-xs {% if is_term3 %}text-blue-600{% else %}text-amber-600{% endif %}">Pass Mark</p>
+            <p class="text-2xl font-bold {% if is_term3 %}text-blue-800{% else %}text-amber-800{% endif %}">{{ pass_mark }}%</p>
         </div>
     </div>
 
-    <!-- Info Note -->
+    {% if not is_term3 %}
+    <!-- Locked: not Term 3 -->
+    <div class="bg-white rounded-xl border border-amber-200 shadow-sm p-8 text-center mb-6">
+        <div class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+        </div>
+        <h3 class="text-base font-semibold text-gray-800 mb-1">Promotion locked until Term 3</h3>
+        <p class="text-sm text-gray-500 max-w-md mx-auto">
+            Students are promoted to the next class only at the end of <strong>Term 3</strong>.
+            The current period is <strong>{{ current_period.term }}, {{ current_period.year }}</strong>.
+            Come back when Term 3 is active to process promotions.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Info Note (only shown in Term 3) -->
+    {% if is_term3 %}
     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
         <p class="text-sm text-yellow-800">
             <strong>Rules:</strong> Only students with results entered AND an average of {{ pass_mark }}% or above can be promoted.
-            Students with no results or below {{ pass_mark }}% <strong>cannot</strong> be promoted.
+            Students with no results or below {{ pass_mark }}% <strong>cannot</strong> be promoted and will be flagged as <strong>Repeating</strong>.
+            Standard 8 students who pass will be marked as <strong>Graduated</strong>.
         </p>
     </div>
+    {% endif %}
 
     {% if student_data %}
-    <form method="POST" action="{{ url_for('admin.promote_students') }}" onsubmit="return confirm('Are you sure you want to promote the selected students? This cannot be undone.');">
+    <form method="POST" action="{{ url_for('admin.promote_students') }}" id="promoteForm">
         <input type="hidden" name="year" value="{{ current_period.year }}">
         <input type="hidden" name="term" value="{{ current_period.term }}">
 
@@ -85,7 +109,13 @@
                                 <p class="text-xs text-gray-400">{{ s.student_number }}</p>
                             </td>
                             <td class="px-4 py-3 text-gray-600">{{ s.current_class|title }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ s.next_class|title }}</td>
+                            <td class="px-4 py-3">
+                                {% if s.next_class == 'Graduated' %}
+                                <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">Graduate</span>
+                                {% else %}
+                                <span class="text-gray-600 text-sm">{{ s.next_class|title }}</span>
+                                {% endif %}
+                            </td>
                             <td class="px-4 py-3 text-center text-gray-600">{{ s.subjects_count }}/{{ s.required_count }}</td>
                             <td class="px-4 py-3 text-center font-medium">
                                 {% if s.average is not none %}
@@ -117,7 +147,7 @@
                 <p class="text-sm text-gray-500">
                     <span id="selected-count">0</span> student(s) selected for promotion
                 </p>
-                <button type="submit"
+                <button type="button" onclick="openPromoteModal()"
                         class="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
                     Confirm Promotions
                 </button>
@@ -133,6 +163,37 @@
 
 </div>
 
+<!-- Promote Confirmation Modal -->
+<div id="promoteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closePromoteModal()"></div>
+    <div class="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="h-1 w-full" style="background-color:#1F7A5C;"></div>
+        <div class="px-6 pt-6 pb-4">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color:#E8F5F0;">
+                <svg class="w-6 h-6" style="color:#1F7A5C;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                </svg>
+            </div>
+            <h3 class="text-center text-base font-semibold text-gray-800 mb-1">Confirm Promotions</h3>
+            <p class="text-center text-sm text-gray-500">
+                You are about to promote <strong id="modal_promote_count" class="text-gray-700">0</strong> student(s).
+            </p>
+            <p class="text-center text-xs text-red-400 mt-2">This action cannot be undone.</p>
+        </div>
+        <div class="px-6 pb-6 flex gap-3">
+            <button onclick="closePromoteModal()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+                Cancel
+            </button>
+            <button onclick="document.getElementById('promoteForm').submit()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-white rounded-xl hover:opacity-90 transition"
+                    style="background-color:#1F7A5C;">
+                Yes, Promote
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     function updateCount() {
         const checked = document.querySelectorAll('.promote-checkbox:checked').length;
@@ -146,10 +207,22 @@
         updateCount();
     }
 
+    function openPromoteModal() {
+        const count = document.querySelectorAll('.promote-checkbox:checked').length;
+        if (count === 0) { alert('Please select at least one student to promote.'); return; }
+        document.getElementById('modal_promote_count').textContent = count;
+        document.getElementById('promoteModal').classList.remove('hidden');
+    }
+
+    function closePromoteModal() {
+        document.getElementById('promoteModal').classList.add('hidden');
+    }
+
     document.querySelectorAll('.promote-checkbox').forEach(cb => {
         cb.addEventListener('change', updateCount);
     });
 
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePromoteModal(); });
     updateCount();
 </script>
 {% endblock %}

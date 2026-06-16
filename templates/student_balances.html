@@ -1,0 +1,297 @@
+{% if session.role == 'accounts' %}
+    {% extends "accounts_base.html" %}
+{% else %}
+    {% extends "admin_base.html" %}
+{% endif %}
+
+{% block title %}Student Balances{% endblock %}
+{% block header_title %}Student Balances{% endblock %}
+
+{% block content %}
+
+<!-- Filters Row -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 px-5 py-4 mb-6">
+    <div class="flex flex-wrap items-end gap-4">
+
+        <!-- Period selectors (reload page) -->
+        <form method="GET" action="{{ url_for('admin.student_balances') }}" id="periodForm" class="flex items-end gap-3">
+            <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Year</label>
+                <select name="year" class="text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2" onchange="document.getElementById('periodForm').submit()">
+                    {% set seen_years = [] %}
+                    {% for p in all_periods %}
+                        {% if p.year not in seen_years %}
+                            {% set _ = seen_years.append(p.year) %}
+                            <option value="{{ p.year }}" {% if p.year == selected_year %}selected{% endif %}>{{ p.year }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Term</label>
+                <select name="term" class="text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2" onchange="document.getElementById('periodForm').submit()">
+                    {% set seen_terms = [] %}
+                    {% for p in all_periods %}
+                        {% if p.term not in seen_terms %}
+                            {% set _ = seen_terms.append(p.term) %}
+                            <option value="{{ p.term }}" {% if p.term == selected_term %}selected{% endif %}>{{ p.term }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        <!-- Divider -->
+        <div class="hidden sm:block w-px h-8 bg-gray-200 self-center"></div>
+
+        <!-- Client-side filters -->
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Class</label>
+            <select id="class_filter" onchange="applyFilters()" class="text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2">
+                <option value="">All Classes</option>
+                {% set seen_classes = [] %}
+                {% for s in balances %}
+                    {% if s.class_name and s.class_name not in seen_classes %}
+                        {% set _ = seen_classes.append(s.class_name) %}
+                        <option value="{{ s.class_name }}">{{ s.class_name | title }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Status</label>
+            <select id="status_filter" onchange="applyFilters()" class="text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2">
+                <option value="">All Students</option>
+                <option value="balance">Has Balance</option>
+                <option value="paid">Fully Paid</option>
+                <option value="credit">Credit</option>
+            </select>
+        </div>
+
+        <button type="button" onclick="resetFilters()" class="text-sm px-3 py-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition self-end">
+            Reset
+        </button>
+
+        <!-- Download forms — hidden inputs filled by JS before submit -->
+        <form method="POST" action="{{ url_for('admin.student_balances_pdf') }}" id="pdf_form" class="self-end">
+            <input type="hidden" name="year"          id="pdf_year">
+            <input type="hidden" name="term"          id="pdf_term">
+            <input type="hidden" name="class_filter"  id="pdf_class">
+            <input type="hidden" name="status_filter" id="pdf_status">
+            <button type="button" onclick="submitDownload('pdf')"
+                    class="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg font-medium text-white transition hover:opacity-90"
+                    style="background-color:#1F7A5C;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                PDF
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.student_balances_csv') }}" id="csv_form" class="self-end">
+            <input type="hidden" name="year"          id="csv_year">
+            <input type="hidden" name="term"          id="csv_term">
+            <input type="hidden" name="class_filter"  id="csv_class">
+            <input type="hidden" name="status_filter" id="csv_status">
+            <button type="button" onclick="submitDownload('csv')"
+                    class="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                CSV
+            </button>
+        </form>
+
+        <div class="ml-auto self-end">
+            <span class="text-xs text-gray-400">
+                {% if is_current %}<span class="inline-block px-2 py-0.5 rounded-full font-medium mr-1" style="background-color: #E8F5F0; color: #1F7A5C;">Current Term</span>{% endif %}
+                Showing <strong id="visible_count">{{ balances | length }}</strong> of {{ balances | length }} students
+            </span>
+        </div>
+    </div>
+</div>
+
+{% if balances %}
+{% set total_expected_sum = namespace(val=0) %}
+{% set total_paid_sum = namespace(val=0) %}
+{% set total_outstanding_sum = namespace(val=0) %}
+{% set students_paid_count = namespace(val=0) %}
+{% for s in balances %}
+    {% set total_expected_sum.val = total_expected_sum.val + s.expected %}
+    {% set total_paid_sum.val = total_paid_sum.val + s.paid %}
+    {% if s.balance > 0 %}{% set total_outstanding_sum.val = total_outstanding_sum.val + s.balance %}{% endif %}
+    {% if s.balance <= 0 %}{% set students_paid_count.val = students_paid_count.val + 1 %}{% endif %}
+{% endfor %}
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Expected</p>
+        <p class="text-lg font-bold mt-1" style="color: #1E293B;" id="summary_expected">MWK {{ "{:,.0f}".format(total_expected_sum.val) }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Collected</p>
+        <p class="text-lg font-bold mt-1" style="color: #1F7A5C;" id="summary_collected">MWK {{ "{:,.0f}".format(total_paid_sum.val) }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Outstanding</p>
+        <p class="text-lg font-bold mt-1 {% if total_outstanding_sum.val > 0 %}text-red-500{% else %}text-emerald-600{% endif %}" id="summary_outstanding">
+            MWK {{ "{:,.0f}".format(total_outstanding_sum.val) }}
+        </p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Fully Paid</p>
+        <p class="text-lg font-bold mt-1" style="color: #1F7A5C;" id="summary_paid_count">{{ students_paid_count.val }} / {{ balances | length }}</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Balances Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    {% if balances %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead>
+                <tr style="background-color: #F8FAFB;">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-8">#</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Student</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Class</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Expected</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Paid</th>
+                    {% if is_current %}
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Credit</th>
+                    {% endif %}
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Balance</th>
+                </tr>
+            </thead>
+            <tbody id="balances_tbody" class="divide-y divide-gray-50">
+                {% for s in balances %}
+                {% set row_status = 'credit' if s.balance < 0 else ('paid' if s.balance <= 0 else 'balance') %}
+                <tr class="hover:bg-gray-50 transition"
+                    data-class="{{ s.class_name }}"
+                    data-status="{{ row_status }}"
+                    data-expected="{{ s.expected }}"
+                    data-paid="{{ s.paid }}"
+                    data-credit="{{ s.credit }}"
+                    data-balance="{{ s.balance }}">
+                    <td class="px-4 py-3 text-xs text-gray-300 serial-cell">{{ loop.index }}</td>
+                    <td class="px-4 py-3">
+                        <p class="text-sm font-medium" style="color: #1E293B;">{{ s.name }}</p>
+                        <p class="text-xs text-gray-400">{{ s.student_number }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ s.class_name | title }}</td>
+                    <td class="px-4 py-3 text-sm text-right text-gray-600">{{ "{:,.0f}".format(s.expected) }}</td>
+                    <td class="px-4 py-3 text-sm text-right font-medium" style="color: #1F7A5C;">{{ "{:,.0f}".format(s.paid) }}</td>
+                    {% if is_current %}
+                    <td class="px-4 py-3 text-sm text-right">
+                        {% if s.credit > 0 %}
+                        <span class="font-medium text-teal-600">+{{ "{:,.0f}".format(s.credit) }}</span>
+                        {% else %}
+                        <span class="text-gray-200">—</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                    <td class="px-4 py-3 text-right">
+                        {% if s.balance < 0 %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background-color: #E0F2F1; color: #00796B;">
+                            Credit MWK {{ "{:,.0f}".format(s.balance | abs) }}
+                        </span>
+                        {% elif s.balance == 0 and s.paid > 0 %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background-color: #E8F5F0; color: #1F7A5C;">
+                            Paid
+                        </span>
+                        {% elif s.balance == 0 and s.credit > 0 %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background-color: #E8F5F0; color: #1F7A5C;">
+                            Covered
+                        </span>
+                        {% else %}
+                        <span class="text-sm font-semibold text-red-500">MWK {{ "{:,.0f}".format(s.balance) }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr id="empty_row" style="display:none;">
+                    <td colspan="99" class="px-4 py-8 text-center text-sm text-gray-400">No students match the selected filters.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+        <svg class="w-10 h-10 mx-auto mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <p class="text-sm text-gray-400">No student data available for this period.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function fmt(n) {
+    return 'MWK ' + Math.round(Math.abs(n)).toLocaleString('en-US');
+}
+
+function applyFilters() {
+    const classFilter = document.getElementById('class_filter').value;
+    const statusFilter = document.getElementById('status_filter').value;
+    const rows = document.querySelectorAll('#balances_tbody tr[data-class]');
+
+    let visible = 0;
+    let totalExpected = 0, totalPaid = 0, totalOutstanding = 0, studentsPaid = 0;
+
+    rows.forEach(row => {
+        const classMatch = !classFilter || row.dataset.class === classFilter;
+        // "paid" filter includes credit rows (overpaid = also fully paid)
+        const statusMatch = !statusFilter ||
+            row.dataset.status === statusFilter ||
+            (statusFilter === 'paid' && row.dataset.status === 'credit');
+
+        if (classMatch && statusMatch) {
+            row.style.display = '';
+            visible++;
+            row.querySelector('.serial-cell').textContent = visible;
+            totalExpected += parseFloat(row.dataset.expected) || 0;
+            totalPaid    += parseFloat(row.dataset.paid)     || 0;
+            const balance = parseFloat(row.dataset.balance)  || 0;
+            if (balance > 0) totalOutstanding += balance;
+            if (balance <= 0) studentsPaid++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    document.getElementById('empty_row').style.display = visible === 0 ? '' : 'none';
+    document.getElementById('visible_count').textContent = visible;
+
+    const summaryExpected    = document.getElementById('summary_expected');
+    const summaryCollected   = document.getElementById('summary_collected');
+    const summaryOutstanding = document.getElementById('summary_outstanding');
+    const summaryPaidCount   = document.getElementById('summary_paid_count');
+
+    if (summaryExpected)    summaryExpected.textContent    = fmt(totalExpected);
+    if (summaryCollected)   summaryCollected.textContent   = fmt(totalPaid);
+    if (summaryOutstanding) {
+        summaryOutstanding.textContent = fmt(totalOutstanding);
+        summaryOutstanding.className = 'text-lg font-bold mt-1 ' + (totalOutstanding > 0 ? 'text-red-500' : 'text-emerald-600');
+    }
+    if (summaryPaidCount)   summaryPaidCount.textContent   = studentsPaid + ' / ' + visible;
+}
+
+function resetFilters() {
+    document.getElementById('class_filter').value  = '';
+    document.getElementById('status_filter').value = '';
+    applyFilters();
+}
+
+function submitDownload(type) {
+    const year   = document.querySelector('[name="year"]') ? document.querySelector('[name="year"]').value : '';
+    const term   = document.querySelector('[name="term"]') ? document.querySelector('[name="term"]').value : '';
+    const cls    = document.getElementById('class_filter').value;
+    const status = document.getElementById('status_filter').value;
+    document.getElementById(type + '_year').value   = year;
+    document.getElementById(type + '_term').value   = term;
+    document.getElementById(type + '_class').value  = cls;
+    document.getElementById(type + '_status').value = status;
+    document.getElementById(type + '_form').submit();
+}
+</script>
+{% endblock %}

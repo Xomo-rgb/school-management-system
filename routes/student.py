@@ -192,37 +192,48 @@ def student_profile_pdf(student_id):
 @role_required('school_admin')
 def register_student():
     if request.method == 'POST':
-        first_name = request.form.get('first_name')
-        last_name = request.form.get('last_name')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
         dob = request.form.get('dob')
-        middle_name = request.form.get('middle_name')
+        middle_name = request.form.get('middle_name', '').strip()
         gender = request.form.get('gender')
         class_name = request.form.get('class_name')
-        guardian_contact = request.form.get('guardian_contact')
+        guardian_contact = request.form.get('guardian_contact', '').strip()
         government_number = request.form.get('government_number', '').strip()
-        special_needs = request.form.get('special_needs')
-        address = request.form.get('address')
+        special_needs = request.form.get('special_needs', '').strip()
+        address = request.form.get('address', '').strip()
         enrollment_date = request.form.get('enrollment_date')
 
         if not all([first_name, last_name, dob, gender, class_name, guardian_contact, address, enrollment_date]):
-            flash("Please fill out all required (*) fields.", "error")
+            error = "Please fill out all required (*) fields."
+            if is_ajax:
+                return jsonify({'success': False, 'error': error})
+            flash(error, "error")
             return render_template('register_student.html', form_data=request.form)
 
         no_gov_classes = ['nursery', 'reception']
         if class_name not in no_gov_classes and not government_number:
-            flash("Government number is required for Standard 1 and above.", "error")
+            error = "Government number is required for Standard 1 and above."
+            if is_ajax:
+                return jsonify({'success': False, 'error': error})
+            flash(error, "error")
             return render_template('register_student.html', form_data=request.form)
 
         if government_number:
             existing = get_documents_where('students', 'government_number', '==', government_number)
             if existing:
-                flash(f"The government number '{government_number}' is already assigned to another student.", "error")
+                error = f"The government number '{government_number}' is already assigned to another student."
+                if is_ajax:
+                    return jsonify({'success': False, 'error': error})
+                flash(error, "error")
                 return render_template('register_student.html', form_data=request.form)
-        
+
         all_students = get_all_documents('students')
         max_id = max([int(s.get('student_number', 'HS-2025-000').split('-')[-1]) for s in all_students] + [0])
         student_number = f"HS-2025-{str(max_id + 1).zfill(3)}"
-        
+
         student_data = {
             'student_number': student_number,
             'first_name': first_name,
@@ -237,10 +248,13 @@ def register_student():
             'address': address,
             'enrollment_date': datetime.strptime(enrollment_date, '%Y-%m-%d') if enrollment_date else None
         }
-        
+
         add_document('students', student_data)
         log_activity(f"Registered new student: '{first_name} {last_name}' with number {student_number}.")
         flash(f"Student '{first_name} {last_name}' registered successfully.", "success")
+
+        if is_ajax:
+            return jsonify({'success': True})
         return redirect(url_for('student.view_students'))
 
     return render_template('register_student.html')
@@ -249,6 +263,8 @@ def register_student():
 @role_required('school_admin')
 def edit_student(student_id):
     if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
         student_data = {
             'first_name': request.form['first_name'],
             'last_name': request.form['last_name'],
@@ -262,10 +278,13 @@ def edit_student(student_id):
             'address': request.form['address'],
             'enrollment_date': datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d') if request.form.get('enrollment_date') else None
         }
-        
+
         update_document('students', student_id, student_data)
         log_activity(f"Edited student record for '{student_data['first_name']} {student_data['last_name']}' (ID: {student_id}).")
         flash("Student information updated successfully.", "success")
+
+        if is_ajax:
+            return jsonify({'success': True})
         return redirect(url_for('student.view_students'))
     
     student = get_document_by_id('students', student_id)
@@ -298,20 +317,26 @@ def delete_student(student_id):
 @role_required('teacher', 'school_admin', 'accounts')
 def view_students():
     students = get_all_documents('students')
-    
-    # Teachers only see students in their assigned classes
+
     if session.get('role') == 'teacher':
         teacher = get_document_by_id('users', session.get('user_id'))
         assigned_classes = [a['class_name'] for a in teacher.get('assignments', [])]
         students = [s for s in students if s.get('class_name') in assigned_classes]
-    
+
     students.sort(key=lambda x: (x.get('class_name', ''), x.get('last_name', ''), x.get('first_name', '')))
-    
+
+    # Pre-process dates to strings so they can be serialised into the modal data store
+    for s in students:
+        if s.get('dob'):
+            s['dob'] = s['dob'].strftime('%Y-%m-%d') if hasattr(s['dob'], 'strftime') else s['dob']
+        if s.get('enrollment_date'):
+            s['enrollment_date'] = s['enrollment_date'].strftime('%Y-%m-%d') if hasattr(s['enrollment_date'], 'strftime') else s['enrollment_date']
+
     teacher_assignments = []
     if session.get('role') == 'teacher':
         teacher = get_document_by_id('users', session.get('user_id'))
         teacher_assignments = teacher.get('assignments', [])
-    
+
     return render_template('view_students.html', students=students, teacher_assignments=teacher_assignments)
 
 @student_bp.route('/filter', methods=['POST'])

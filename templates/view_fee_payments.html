@@ -10,108 +10,348 @@
 {% block header_title %}Fee Payment Records{% endblock %}
 
 {% block content %}
-<!-- Filter Controls -->
-<div class="bg-white p-4 rounded-lg shadow mb-6">
-    <form id="filterForm" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-        <div>
-            <label for="academic_year_filter" class="block text-sm font-medium text-gray-700">Academic Year</label>
-            <select id="academic_year_filter" name="academic_year" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                <option value="">All Years</option>
-                {% for year in academic_years %}<option value="{{ year }}">{{ year }}</option>{% endfor %}
-            </select>
-        </div>
-        <div>
-            <label for="term_filter" class="block text-sm font-medium text-gray-700">Term</label>
-            <select id="term_filter" name="term" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                <option value="">All Terms</option>
-                {% for t in terms %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
-            </select>
-        </div>
-        <div>
-            <label for="class_filter" class="block text-sm font-medium text-gray-700">Class</label>
-            <select id="class_filter" name="class_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                <option value="">All Classes</option>
-                {% for c in classes %}<option value="{{ c }}">{{ c|title }}</option>{% endfor %}
-            </select>
-        </div>
-        <div></div>
-        <button type="button" id="reset_filters" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 text-sm">Reset Filters</button>
-    </form>
-</div>
 
-<!-- Download PDF -->
-<div class="mb-4 flex justify-end">
-    <form method="POST" action="{{ url_for('admin.fee_payments_pdf') }}" id="pdf_form">
-        <input type="hidden" name="academic_year" id="pdf_academic_year">
-        <input type="hidden" name="term" id="pdf_term">
-        <input type="hidden" name="class_name" id="pdf_class_name">
-        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-            Download PDF
-        </button>
-    </form>
+<!-- Filter bar — filterForm does NOT contain the PDF form -->
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 mb-6">
+    <div class="flex flex-wrap items-end gap-4">
+
+        <form id="filterForm" class="flex flex-wrap items-end gap-4 flex-1">
+            <div>
+                <label for="academic_year_filter" class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Academic Year</label>
+                <select id="academic_year_filter" name="academic_year" class="text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-200 bg-white min-w-[130px]">
+                    <option value="">All Years</option>
+                    {% for year in academic_years %}<option value="{{ year }}">{{ year }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="term_filter" class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Term</label>
+                <select id="term_filter" name="term" class="text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-200 bg-white min-w-[120px]">
+                    <option value="">All Terms</option>
+                    {% for t in terms %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="class_filter" class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Class</label>
+                <select id="class_filter" name="class_name" class="text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-200 bg-white min-w-[140px]">
+                    <option value="">All Classes</option>
+                    {% for c in classes %}<option value="{{ c }}">{{ c|title }}</option>{% endfor %}
+                </select>
+            </div>
+        </form>
+
+        <!-- Reset + PDF — siblings of filterForm, NOT children -->
+        <div class="flex items-end gap-3 flex-shrink-0">
+            <button type="button" id="reset_filters"
+                    class="text-sm px-3 py-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition">
+                Reset
+            </button>
+            <form method="POST" action="{{ url_for('admin.fee_payments_pdf') }}" id="pdf_form">
+                <input type="hidden" name="academic_year" id="pdf_academic_year">
+                <input type="hidden" name="term"          id="pdf_term">
+                <input type="hidden" name="class_name"    id="pdf_class_name">
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg font-medium text-white transition hover:opacity-90"
+                        style="background-color:#1F7A5C;">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download PDF
+                </button>
+            </form>
+        </div>
+
+    </div>
 </div>
 
 <!-- Payments Table -->
-<div class="overflow-x-auto bg-white rounded-lg shadow">
-    <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <table class="min-w-full text-sm">
+        <thead style="background-color:#F8FAFB;">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student Name</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount Paid (MWK)</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Date</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Term</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
-                {% if session.role == 'accounts' %}<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>{% endif %}
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-10">#</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Student</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Class</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Amount Paid</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Balance</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Date</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Term</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Year</th>
+                {% if session.role == 'accounts' %}
+                <th class="px-5 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">Actions</th>
+                {% endif %}
             </tr>
         </thead>
-        <tbody id="payments_tbody" class="bg-white divide-y divide-gray-200"></tbody>
+        <tbody id="payments_tbody" class="divide-y divide-gray-50"></tbody>
     </table>
 </div>
 
+<!-- Edit Payment Modal -->
+<div id="editPaymentModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeEditModal()"></div>
+    <div class="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="h-1 w-full" style="background-color:#1F7A5C;"></div>
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div>
+                <h2 class="text-base font-semibold text-gray-800">Edit Payment</h2>
+                <p id="edit_student_label" class="text-xs text-gray-400 mt-0.5"></p>
+            </div>
+            <button onclick="closeEditModal()" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <div id="edit_error" class="hidden p-3 rounded-lg bg-red-50 text-red-700 border border-red-200 text-sm"></div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Amount Paid (MWK)</label>
+                <input type="number" id="edit_amount" step="0.01" min="0"
+                       class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-200">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Payment Date</label>
+                <input type="date" id="edit_date"
+                       class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-200">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Term</label>
+                    <select id="edit_term" class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-200">
+                        <option value="Term 1">Term 1</option>
+                        <option value="Term 2">Term 2</option>
+                        <option value="Term 3">Term 3</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Academic Year</label>
+                    <input type="text" id="edit_year" placeholder="e.g. 2024-2025"
+                           class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-200">
+                </div>
+            </div>
+        </div>
+        <div class="px-6 pb-6 flex gap-3">
+            <button onclick="closeEditModal()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+                Cancel
+            </button>
+            <button id="saveEditBtn" onclick="saveEdit()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-white rounded-xl transition hover:opacity-90"
+                    style="background-color:#1F7A5C;">
+                Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+    <div class="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="h-1 w-full bg-red-500"></div>
+        <div class="px-6 pt-6 pb-4">
+            <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </div>
+            <h3 class="text-center text-base font-semibold text-gray-800 mb-1">Delete Payment Record?</h3>
+            <p class="text-center text-sm text-gray-400">This action cannot be undone.</p>
+        </div>
+        <div class="px-6 pb-6 flex gap-3">
+            <button onclick="closeDeleteModal()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+                Cancel
+            </button>
+            <form id="deleteForm" method="POST" class="flex-1">
+                <button type="submit"
+                        class="w-full px-4 py-2.5 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition">
+                    Yes, Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+let fetchPayments;
+
 document.addEventListener('DOMContentLoaded', function() {
-    const filterForm = document.getElementById('filterForm');
+    const filterForm   = document.getElementById('filterForm');
     const paymentsTbody = document.getElementById('payments_tbody');
-    const userRole = "{{ session.role }}";
-    function fetchPayments() {
-        paymentsTbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Loading...</td></tr>';
+    const userRole     = "{{ session.role }}";
+
+    // Pre-select current period
+    const currentYear = "{{ current_period.year }}";
+    const currentTerm = "{{ current_period.term }}";
+    if (currentYear && currentYear !== 'Not Set') {
+        Array.from(document.getElementById('academic_year_filter').options)
+            .forEach(o => { if (o.value === currentYear) o.selected = true; });
+    }
+    if (currentTerm && currentTerm !== 'Not Set') {
+        Array.from(document.getElementById('term_filter').options)
+            .forEach(o => { if (o.value === currentTerm) o.selected = true; });
+    }
+
+    fetchPayments = function() {
+        const colSpan = userRole === 'accounts' ? 9 : 8;
+        paymentsTbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-6 text-sm text-gray-400">Loading…</td></tr>`;
+
         const formData = new FormData(filterForm);
         fetch("{{ url_for('admin.filter_fee_payments') }}", { method: 'POST', body: formData })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
-            // Set PDF form fields
+            // Sync PDF hidden inputs
             document.getElementById('pdf_academic_year').value = document.getElementById('academic_year_filter').value;
-            document.getElementById('pdf_term').value = document.getElementById('term_filter').value;
-            document.getElementById('pdf_class_name').value = document.getElementById('class_filter').value;
-            
+            document.getElementById('pdf_term').value          = document.getElementById('term_filter').value;
+            document.getElementById('pdf_class_name').value    = document.getElementById('class_filter').value;
+
             paymentsTbody.innerHTML = '';
             if (data.payments && data.payments.length > 0) {
+                let rowNum = 1;
                 data.payments.forEach(p => {
+                    // Balance cell
+                    let balanceHtml;
+                    if (p.balance === null || p.balance === undefined) {
+                        balanceHtml = `<span class="text-gray-300 text-xs">—</span>`;
+                    } else if (p.balance <= 0) {
+                        balanceHtml = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Paid</span>`;
+                    } else {
+                        balanceHtml = `<span class="text-sm font-semibold text-red-500">${parseFloat(p.balance).toLocaleString('en-US', {minimumFractionDigits:2})}</span>`;
+                    }
+
+                    // Action icons
                     let actionsHtml = '';
                     if (userRole === 'accounts') {
-                        actionsHtml = `<td class="px-6 py-4 whitespace-nowrap"><div class="flex space-x-2"><a href="/admin/edit_fee/${p.payment_id}" class="text-emerald-600 hover:text-emerald-800 text-sm">Edit</a><form action="/admin/delete_fee/${p.payment_id}" method="POST" onsubmit="return confirm('Delete this record?');"><button type="submit" class="text-red-600 hover:text-red-800 text-sm">Delete</button></form></div></td>`;
+                        actionsHtml = `<td class="px-5 py-3 text-center">
+                            <div class="inline-flex items-center gap-1">
+                                <button type="button" title="Edit"
+                                        data-id="${p.id}"
+                                        data-name="${(p.full_name || '').replace(/"/g, '&quot;')}"
+                                        data-number="${p.student_number || ''}"
+                                        data-amount="${p.amount_paid || ''}"
+                                        data-date="${p.payment_date || ''}"
+                                        data-term="${p.term || ''}"
+                                        data-year="${p.academic_year || ''}"
+                                        onclick="openEditModal(this)"
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button type="button" title="Delete"
+                                        onclick="openDeleteModal('/admin/delete_fee/${p.id}')"
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg border border-red-100 text-red-400 hover:bg-red-50 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>`;
                     }
+
                     const tr = document.createElement('tr');
-                    let tableRowHtml = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.full_name}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.class_name}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-right">${parseFloat(p.amount_paid).toFixed(2)}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.payment_date}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.term}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.academic_year}</td>`;
-                    if(userRole === 'accounts') { tableRowHtml += actionsHtml; }
-                    tr.innerHTML = tableRowHtml;
+                    tr.className = 'hover:bg-gray-50 transition';
+                    tr.innerHTML =
+                        `<td class="px-4 py-3 text-xs text-gray-300">${rowNum++}</td>`
+                      + `<td class="px-5 py-3 font-medium" style="color:#1E293B">${p.full_name}</td>`
+                      + `<td class="px-5 py-3 text-sm text-gray-500">${p.class_name ? p.class_name.charAt(0).toUpperCase() + p.class_name.slice(1) : ''}</td>`
+                      + `<td class="px-5 py-3 text-sm text-right font-semibold" style="color:#1F7A5C">${parseFloat(p.amount_paid).toLocaleString('en-US', {minimumFractionDigits:2})}</td>`
+                      + `<td class="px-5 py-3 text-right">${balanceHtml}</td>`
+                      + `<td class="px-5 py-3 text-sm text-gray-500">${p.payment_date}</td>`
+                      + `<td class="px-5 py-3 text-sm text-gray-500">${p.term}</td>`
+                      + `<td class="px-5 py-3 text-sm text-gray-500">${p.academic_year}</td>`
+                      + actionsHtml;
                     paymentsTbody.appendChild(tr);
                 });
             } else {
-                const colSpan = userRole === 'accounts' ? 7 : 6;
-                paymentsTbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-4 text-gray-500">No payment records found.</td></tr>`;
+                paymentsTbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-10 text-sm text-gray-400">No payment records found.</td></tr>`;
             }
         });
     }
-    document.querySelectorAll('#filterForm input, #filterForm select').forEach(input => {
-        input.addEventListener('change', fetchPayments);
-    });
+
+    filterForm.querySelectorAll('select').forEach(el => el.addEventListener('change', fetchPayments));
     document.getElementById('reset_filters').addEventListener('click', () => {
         filterForm.reset();
         fetchPayments();
     });
     fetchPayments();
 });
+
+// Edit modal
+let currentEditId = null;
+
+function openEditModal(btn) {
+    currentEditId = btn.dataset.id;
+
+    const nameLabel = btn.dataset.name + (btn.dataset.number ? '  ·  ' + btn.dataset.number : '');
+    document.getElementById('edit_student_label').textContent = nameLabel;
+    document.getElementById('edit_amount').value = btn.dataset.amount || '';
+    document.getElementById('edit_date').value   = btn.dataset.date   || '';
+    document.getElementById('edit_term').value   = btn.dataset.term   || 'Term 1';
+    document.getElementById('edit_year').value   = btn.dataset.year   || '';
+
+    document.getElementById('edit_error').classList.add('hidden');
+    document.getElementById('saveEditBtn').textContent = 'Save Changes';
+    document.getElementById('saveEditBtn').disabled = false;
+
+    document.getElementById('editPaymentModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEditModal() {
+    document.getElementById('editPaymentModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function saveEdit() {
+    const btn = document.getElementById('saveEditBtn');
+    const errEl = document.getElementById('edit_error');
+    errEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    const fd = new FormData();
+    fd.append('amount_paid',   document.getElementById('edit_amount').value);
+    fd.append('payment_date',  document.getElementById('edit_date').value);
+    fd.append('term',          document.getElementById('edit_term').value);
+    fd.append('academic_year', document.getElementById('edit_year').value);
+
+    fetch(`/admin/edit_fee/${currentEditId}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd
+    })
+    .then(r => {
+        if (!r.ok) throw new Error('Server error ' + r.status);
+        return r.json();
+    })
+    .then(data => {
+        if (data.success) {
+            closeEditModal();
+            if (typeof fetchPayments === 'function') fetchPayments();
+        } else {
+            errEl.textContent = data.error || 'Could not save changes.';
+            errEl.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+        }
+    })
+    .catch(err => {
+        errEl.textContent = 'Request failed: ' + err.message;
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    });
+}
+
+// Delete modal
+function openDeleteModal(action) {
+    document.getElementById('deleteForm').action = action;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDeleteModal(); });
 </script>
 {% endblock %}

@@ -54,9 +54,10 @@
             <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
                 <p class="text-sm text-yellow-800">Resetting the password will set it to the system default: <strong>password123</strong>. The user will be required to change it on their next login.</p>
             </div>
-            <form method="POST" action="{{ url_for('user.edit_user', user_id=user.id) }}" class="mt-6" onsubmit="return confirm('Are you sure you want to reset this user\'s password?');">
+            <form method="POST" action="{{ url_for('user.edit_user', user_id=user.id) }}" id="resetPasswordForm" class="mt-6">
                 <input type="hidden" name="action" value="reset_password">
-                <button type="submit" class="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700">
+                <button type="button" onclick="openResetModal()"
+                        class="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700">
                     Reset Password
                 </button>
             </form>
@@ -64,7 +65,39 @@
     </div>
 </div>
 
+<!-- Reset Password Modal -->
+<div id="resetPasswordModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeResetModal()"></div>
+    <div class="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="h-1 w-full bg-red-500"></div>
+        <div class="px-6 pt-6 pb-4">
+            <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+            </div>
+            <h3 class="text-center text-base font-semibold text-gray-800 mb-1">Reset Password?</h3>
+            <p class="text-center text-sm text-gray-500 mb-2">Password will be reset to</p>
+            <p class="text-center font-mono font-bold text-gray-800 bg-gray-100 rounded-lg py-1.5 text-sm">password123</p>
+            <p class="text-center text-xs text-gray-400 mt-2">The user will be required to change it on next login.</p>
+        </div>
+        <div class="px-6 pb-6 flex gap-3">
+            <button onclick="closeResetModal()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+                Cancel
+            </button>
+            <button onclick="document.getElementById('resetPasswordForm').submit()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition">
+                Yes, Reset
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
+function openResetModal()  { document.getElementById('resetPasswordModal').classList.remove('hidden'); }
+function closeResetModal() { document.getElementById('resetPasswordModal').classList.add('hidden'); }
+
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.getElementById('role');
     const phoneFieldDiv = document.getElementById('phone_field');
@@ -79,5 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
     togglePhoneField();
     roleSelect.addEventListener('change', togglePhoneField);
 });
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeResetModal(); });
 </script>
 {% endblock %}

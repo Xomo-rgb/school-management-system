@@ -40,11 +40,12 @@
     <div class="bg-white rounded-lg shadow-lg p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-2">End Current Period</h3>
         <p class="text-sm text-gray-500 mb-4">
-            Ending this period will lock all data for <strong>{{ current_period.year }} - {{ current_period.term }}</strong>. 
+            Ending this period will lock all data for <strong>{{ current_period.year }} - {{ current_period.term }}</strong>.
             No payments or records can be edited after this. This cannot be undone.
         </p>
-        <form method="POST" action="{{ url_for('admin.end_period') }}" onsubmit="return confirm('Are you sure you want to end {{ current_period.year }} - {{ current_period.term }}? This cannot be undone.');">
-            <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">
+        <form method="POST" action="{{ url_for('admin.end_period') }}" id="endPeriodForm">
+            <button type="button" onclick="openEndPeriodModal()"
+                    class="px-5 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">
                 End {{ current_period.term }}, {{ current_period.year }}
             </button>
         </form>
@@ -133,4 +134,41 @@
     {% endif %}
 
 </div>
+
+<!-- End Period Confirmation Modal -->
+<div id="endPeriodModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeEndPeriodModal()"></div>
+    <div class="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="h-1 w-full bg-red-500"></div>
+        <div class="px-6 pt-6 pb-4">
+            <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-center text-base font-semibold text-gray-800 mb-1">End Academic Period?</h3>
+            <p class="text-center text-sm text-gray-500">
+                This will lock all data for<br>
+                <strong class="text-gray-700">{{ current_period.year }} &mdash; {{ current_period.term }}</strong>.
+            </p>
+            <p class="text-center text-xs text-red-500 mt-2">Payments and records cannot be edited after this. This cannot be undone.</p>
+        </div>
+        <div class="px-6 pb-6 flex gap-3">
+            <button onclick="closeEndPeriodModal()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+                Cancel
+            </button>
+            <button onclick="document.getElementById('endPeriodForm').submit()"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition">
+                Yes, End Period
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openEndPeriodModal()  { document.getElementById('endPeriodModal').classList.remove('hidden'); }
+function closeEndPeriodModal() { document.getElementById('endPeriodModal').classList.add('hidden'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEndPeriodModal(); });
+</script>
 {% endblock %}

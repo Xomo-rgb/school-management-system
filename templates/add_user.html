@@ -2,7 +2,14 @@
 
 {% block title %}Add New User{% endblock %}
 
-{% block header_title %}Add New User{% endblock %}
+{% block header_title %}
+<div class="flex items-center space-x-3">
+    <a href="{{ url_for('user.view_users') }}" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
+    <span>Add New User</span>
+</div>
+{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">

@@ -8,139 +8,235 @@
     {% extends "admin_base.html" %}
 {% endif %}
 
-{% block title %}Student Profile{% endblock %}
-
+{% block title %}{{ student.first_name }} {{ student.last_name }} — Profile{% endblock %}
 {% block header_title %}Student Profile{% endblock %}
 
 {% block content %}
-<div>
-    <!-- Student Header -->
-    <div class="bg-white p-6 rounded-lg shadow mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-800">{{ student.first_name }} {{ student.middle_name or '' }} {{ student.last_name }}</h2>
-                <p class="text-sm text-gray-600"><strong>Student Number:</strong> {{ student.student_number }} | <strong>Class:</strong> {{ student.class_name|title }}</p>
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- ── Header card ── -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <!-- Top accent -->
+        <div class="h-1.5 w-full" style="background-color: #1F7A5C;"></div>
+        <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center space-x-4">
+                <!-- Avatar -->
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-white flex-shrink-0"
+                     style="background-color: #1F7A5C;">
+                    {{ student.first_name[0].upper() }}{{ student.last_name[0].upper() }}
+                </div>
+                <!-- Name + meta -->
+                <div>
+                    <h2 class="text-xl font-bold" style="color: #1E293B;">
+                        {{ student.first_name }} {{ student.middle_name or '' }} {{ student.last_name }}
+                    </h2>
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                            {{ student.student_number }}
+                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background-color: #E8F5F0; color: #1F7A5C;">
+                            {{ student.class_name | title }}
+                        </span>
+                        {% if student.status == 'active' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Active</span>
+                        {% elif student.status == 'repeating' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">Repeating</span>
+                        {% elif student.status == 'graduated' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">Graduated</span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-            {% if session['role'] == 'school_admin' %}
-            <div class="flex space-x-2">
-                <a href="{{ url_for('student.edit_student', student_id=student.id) }}" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Edit Student</a>
-                <a href="{{ url_for('student.student_profile_pdf', student_id=student.id) }}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Download PDF</a>
+            <!-- Actions -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                {% if session['role'] == 'school_admin' %}
+                <a href="{{ url_for('student.edit_student', student_id=student.id) }}"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    Edit
+                </a>
+                {% endif %}
+                {% if session['role'] in ['school_admin', 'accounts'] %}
+                <a href="{{ url_for('student.student_profile_pdf', student_id=student.id) }}"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg text-white transition hover:opacity-90"
+                   style="background-color: #1F7A5C;">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download PDF
+                </a>
+                {% endif %}
             </div>
-            {% elif session['role'] == 'accounts' %}
-            <a href="{{ url_for('student.student_profile_pdf', student_id=student.id) }}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Download PDF</a>
-            {% endif %}
         </div>
     </div>
 
-    <!-- Fee Balance Card (visible to admin and accounts only) -->
+    <!-- ── Fee balance cards (admin / accounts only) ── -->
     {% if session['role'] in ['school_admin', 'accounts'] %}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white p-5 rounded-lg shadow text-center">
-            <p class="text-xs text-gray-500 uppercase font-medium">Expected Fee</p>
-            <p class="text-2xl font-bold text-gray-800 mt-1">MWK {{ "{:,.0f}".format(expected_fee) }}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Expected Fee</p>
+            <p class="text-2xl font-bold mt-1" style="color: #1E293B;">MWK {{ "{:,.0f}".format(expected_fee) }}</p>
             <p class="text-xs text-gray-400 mt-1">{{ current_period.term }}, {{ current_period.year }}</p>
         </div>
-        <div class="bg-white p-5 rounded-lg shadow text-center">
-            <p class="text-xs text-gray-500 uppercase font-medium">Amount Paid</p>
-            <p class="text-2xl font-bold text-emerald-600 mt-1">MWK {{ "{:,.0f}".format(current_term_paid) }}</p>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Amount Paid</p>
+            <p class="text-2xl font-bold mt-1" style="color: #1F7A5C;">MWK {{ "{:,.0f}".format(current_term_paid) }}</p>
             <p class="text-xs text-gray-400 mt-1">This term</p>
         </div>
-        <div class="bg-white p-5 rounded-lg shadow text-center">
-            <p class="text-xs text-gray-500 uppercase font-medium">Balance</p>
-            <p class="text-2xl font-bold mt-1 {% if balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">
-                MWK {{ "{:,.0f}".format(balance) }}
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Balance</p>
+            <p class="text-2xl font-bold mt-1 {% if balance > 0 %}text-red-500{% else %}text-emerald-600{% endif %}">
+                MWK {{ "{:,.0f}".format(balance | abs) }}
             </p>
-            <p class="text-xs mt-1 {% if balance > 0 %}text-red-400{% else %}text-emerald-400{% endif %}">
+            <p class="text-xs mt-1 {% if balance > 0 %}text-red-400{% else %}text-emerald-500{% endif %}">
                 {% if balance <= 0 %}Fully Paid{% else %}Outstanding{% endif %}
             </p>
         </div>
     </div>
     {% endif %}
 
+    <!-- ── Bio + tables ── -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left Column: Bio -->
-        <div class="lg:col-span-1 space-y-6">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h3 class="font-semibold text-lg border-b pb-2 mb-4">Biographical Information</h3>
-                <dl class="space-y-2 text-sm">
-                    <div class="flex justify-between"><dt class="text-gray-600">Date of Birth:</dt><dd class="font-medium text-gray-800">{{ student.dob.strftime('%d %B %Y') if student.dob else 'N/A' }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">Gender:</dt><dd class="font-medium text-gray-800">{{ student.gender|title }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">Guardian Contact:</dt><dd class="font-medium text-gray-800">{{ student.guardian_contact }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">Enrollment Date:</dt><dd class="font-medium text-gray-800">{{ student.enrollment_date.strftime('%d %B %Y') if student.enrollment_date else 'N/A' }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">Government ID:</dt><dd class="font-medium text-gray-800">{{ student.government_number or 'N/A' }}</dd></div>
-                    <div><dt class="text-gray-600">Address:</dt><dd class="font-medium text-gray-800 mt-1">{{ student.address }}</dd></div>
-                    <div><dt class="text-gray-600">Special Needs:</dt><dd class="font-medium text-gray-800 mt-1">{{ student.special_needs or 'None' }}</dd></div>
+
+        <!-- Bio -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold" style="color: #1E293B;">Biographical Info</h3>
+                </div>
+                <dl class="divide-y divide-gray-50 text-sm">
+                    <div class="flex flex-col px-5 py-3">
+                        <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Date of Birth</dt>
+                        <dd class="font-medium text-gray-800">{{ student.dob.strftime('%d %B %Y') if student.dob else '—' }}</dd>
+                    </div>
+                    <div class="flex flex-col px-5 py-3">
+                        <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Gender</dt>
+                        <dd class="font-medium text-gray-800">{{ student.gender | title if student.gender else '—' }}</dd>
+                    </div>
+                    <div class="flex flex-col px-5 py-3">
+                        <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Guardian Name</dt>
+                        <dd class="font-medium text-gray-800">{{ student.guardian_name or '—' }}</dd>
+                    </div>
+                    <div class="flex flex-col px-5 py-3">
+                        <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Guardian Contact</dt>
+                        <dd class="font-medium text-gray-800">{{ student.guardian_contact or '—' }}</dd>
+                    </div>
+                    <div class="flex flex-col px-5 py-3">
+                        <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Enrollment Date</dt>
+                        <dd class="font-medium text-gray-800">{{ student.enrollment_date.strftime('%d %B %Y') if student.enrollment_date else '—' }}</dd>
+                    </div>
+                    {% if student.government_number %}
+                    <div class="flex flex-col px-5 py-3">
+                        <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Government ID</dt>
+                        <dd class="font-medium text-gray-800">{{ student.government_number }}</dd>
+                    </div>
+                    {% endif %}
+                    <div class="flex flex-col px-5 py-3">
+                        <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Address</dt>
+                        <dd class="font-medium text-gray-800">{{ student.address or '—' }}</dd>
+                    </div>
+                    {% if student.special_needs %}
+                    <div class="flex flex-col px-5 py-3">
+                        <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Special Needs</dt>
+                        <dd class="font-medium text-orange-700 bg-orange-50 rounded-lg px-2 py-1 text-xs mt-0.5 inline-block">{{ student.special_needs }}</dd>
+                    </div>
+                    {% endif %}
                 </dl>
             </div>
         </div>
 
-        <!-- Right Column: Results & Fees -->
+        <!-- Right: Academic + Payments -->
         <div class="lg:col-span-2 space-y-6">
+
             <!-- Academic History -->
-            <div class="bg-white rounded-lg shadow">
-                <h3 class="font-semibold text-lg p-4 border-b">Academic History</h3>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold" style="color: #1E293B;">Academic History</h3>
+                </div>
+                {% if results %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 text-left font-medium text-gray-600">Year</th>
-                                <th class="px-4 py-2 text-left font-medium text-gray-600">Term</th>
-                                <th class="px-4 py-2 text-left font-medium text-gray-600">Subject</th>
-                                <th class="px-4 py-2 text-center font-medium text-gray-600">Overall</th>
-                                <th class="px-4 py-2 text-center font-medium text-gray-600">Grade</th>
+                        <thead>
+                            <tr style="background-color: #F8FAFB;">
+                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Year</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Term</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Subject</th>
+                                <th class="px-5 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">Score</th>
+                                <th class="px-5 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">Grade</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y">
+                        <tbody class="divide-y divide-gray-50">
                             {% for result in results %}
-                            <tr>
-                                <td class="px-4 py-2">{{ result.year }}</td>
-                                <td class="px-4 py-2">{{ result.term }}</td>
-                                <td class="px-4 py-2 font-medium">{{ result.subject }}</td>
-                                <td class="px-4 py-2 text-center">{{ result.final_score }}</td>
-                                <td class="px-4 py-2 text-center font-bold">{{ result.grade }}</td>
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-5 py-3 text-gray-600">{{ result.year }}</td>
+                                <td class="px-5 py-3 text-gray-600">{{ result.term }}</td>
+                                <td class="px-5 py-3 font-medium" style="color: #1E293B;">{{ result.subject }}</td>
+                                <td class="px-5 py-3 text-center font-semibold {% if result.final_score < 40 %}text-red-500{% else %}text-gray-700{% endif %}">
+                                    {{ result.final_score }}
+                                </td>
+                                <td class="px-5 py-3 text-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold
+                                        {% if result.grade == 'A' %}bg-emerald-100 text-emerald-700
+                                        {% elif result.grade == 'B' %}bg-blue-100 text-blue-700
+                                        {% elif result.grade == 'C' %}bg-yellow-100 text-yellow-700
+                                        {% elif result.grade == 'D' %}bg-orange-100 text-orange-700
+                                        {% else %}bg-red-100 text-red-700{% endif %}">
+                                        {{ result.grade }}
+                                    </span>
+                                </td>
                             </tr>
-                            {% else %}
-                            <tr><td colspan="5" class="text-center p-4 text-gray-500">No exam results found.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                {% else %}
+                <div class="px-5 py-10 text-center text-sm text-gray-400">No exam results recorded yet.</div>
+                {% endif %}
             </div>
+
             <!-- Fee Payment History -->
-            <div class="bg-white rounded-lg shadow">
-                <h3 class="font-semibold text-lg p-4 border-b">Fee Payment History</h3>
+            {% if session['role'] in ['school_admin', 'accounts'] %}
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold" style="color: #1E293B;">Fee Payment History</h3>
+                </div>
+                {% if payments %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 text-left font-medium text-gray-600">Payment Date</th>
-                                <th class="px-4 py-2 text-left font-medium text-gray-600">Academic Year</th>
-                                <th class="px-4 py-2 text-left font-medium text-gray-600">Term</th>
-                                <th class="px-4 py-2 text-right font-medium text-gray-600">Amount Paid</th>
+                        <thead>
+                            <tr style="background-color: #F8FAFB;">
+                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Date</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Year</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Term</th>
+                                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Amount (MWK)</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y">
+                        <tbody class="divide-y divide-gray-50">
                             {% for payment in payments %}
-                            <tr>
-                                <td class="px-4 py-2">
-                                    {% if payment.payment_date %}
-                                        {{ payment.payment_date.strftime('%d-%b-%Y') }}
-                                    {% else %}
-                                        Unknown
-                                    {% endif %}
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-5 py-3 text-gray-600">
+                                    {{ payment.payment_date.strftime('%d %b %Y') if payment.payment_date else '—' }}
                                 </td>
-                                <td class="px-4 py-2">{{ payment.academic_year }}</td>
-                                <td class="px-4 py-2">{{ payment.term }}</td>
-                                <td class="px-4 py-2 text-right font-medium">{{ "%.2f"|format(payment.amount_paid) }}</td>
+                                <td class="px-5 py-3 text-gray-600">{{ payment.academic_year }}</td>
+                                <td class="px-5 py-3 text-gray-600">{{ payment.term }}</td>
+                                <td class="px-5 py-3 text-right font-semibold" style="color: #1F7A5C;">
+                                    {{ "{:,.2f}".format(payment.amount_paid) }}
+                                </td>
                             </tr>
-                            {% else %}
-                            <tr><td colspan="4" class="text-center p-4 text-gray-500">No fee payments found.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                {% else %}
+                <div class="px-5 py-10 text-center text-sm text-gray-400">No fee payments recorded yet.</div>
+                {% endif %}
             </div>
+            {% endif %}
+
         </div>
     </div>
+
 </div>
 {% endblock %}
